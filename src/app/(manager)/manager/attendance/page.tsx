@@ -1,15 +1,40 @@
 import { getSession } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDate, formatDateTime } from '@/lib/utils';
 
 export default async function ManagerAttendancePage() {
   const session = await getSession();
-  const allEmployees = db.getEmployees();
-  const teamMembers = allEmployees.filter(e => e.reportingHeadId === session!.employeeId);
-  const teamIds = teamMembers.map(t => t.id);
-  const attendance = db.getAttendance().filter(a => teamIds.includes(a.employeeId));
+
+  const teamMembers = await prisma.employee.findMany({
+    where: {
+      reportingHeadId: session!.employeeId!,
+    },
+  });
+
+  const teamIds = [session!.employeeId!, ...teamMembers.map(t => t.id)];
+
+  const attendance = await prisma.attendance.findMany({
+    where: {
+      employeeId: {
+        in: teamIds,
+      },
+    },
+    include: {
+      employee: {
+        select: {
+          id: true,
+          name: true,
+          employeeId: true,
+        },
+      },
+    },
+    orderBy: {
+      date: 'desc',
+    },
+    take: 100,
+  });
 
   return (
     <div className="p-6 space-y-6">
@@ -37,10 +62,9 @@ export default async function ManagerAttendancePage() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {attendance.map((att) => {
-                  const emp = allEmployees.find(e => e.id === att.employeeId);
                   return (
                     <tr key={att.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm">{emp?.name}</td>
+                      <td className="px-4 py-3 text-sm">{att.employee?.name || 'N/A'}</td>
                       <td className="px-4 py-3 text-sm">{formatDate(att.date)}</td>
                       <td className="px-4 py-3 text-sm">{att.punchIn ? formatDateTime(att.punchIn) : '-'}</td>
                       <td className="px-4 py-3 text-sm">{att.punchOut ? formatDateTime(att.punchOut) : '-'}</td>

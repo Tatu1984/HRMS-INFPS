@@ -1,13 +1,25 @@
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
-import { CheckCircle, XCircle, Clock, Ban } from 'lucide-react';
+import { LeaveActionButtons } from '@/components/admin/LeaveActionButtons';
 
 export default async function LeaveManagementPage() {
-  const leaves = db.getLeaves();
-  const employees = db.getEmployees();
+  const leaves = await prisma.leave.findMany({
+    include: {
+      employee: {
+        select: {
+          id: true,
+          name: true,
+          employeeId: true,
+          designation: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
 
   return (
     <div className="p-6 space-y-6">
@@ -36,16 +48,14 @@ export default async function LeaveManagementPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {leaves.map((leave) => {
-                  const emp = employees.find(e => e.id === leave.employeeId);
-                  return (
+                {leaves.map((leave) => (
                     <tr key={leave.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm">{emp?.name}</td>
+                      <td className="px-4 py-3 text-sm">{leave.employee.name}</td>
                       <td className="px-4 py-3 text-sm">
                         <Badge variant="outline">{leave.leaveType}</Badge>
                       </td>
-                      <td className="px-4 py-3 text-sm">{formatDate(leave.startDate)}</td>
-                      <td className="px-4 py-3 text-sm">{formatDate(leave.endDate)}</td>
+                      <td className="px-4 py-3 text-sm">{formatDate(leave.startDate.toString())}</td>
+                      <td className="px-4 py-3 text-sm">{formatDate(leave.endDate.toString())}</td>
                       <td className="px-4 py-3 text-sm">{leave.days}</td>
                       <td className="px-4 py-3 text-sm">{leave.reason}</td>
                       <td className="px-4 py-3 text-sm">
@@ -60,23 +70,10 @@ export default async function LeaveManagementPage() {
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-sm">
-                        {leave.status === 'PENDING' && (
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline" className="text-green-600">
-                              <CheckCircle className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" variant="outline" className="text-red-600">
-                              <XCircle className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" variant="outline" className="text-orange-600">
-                              <Clock className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        )}
+                        <LeaveActionButtons leaveId={leave.id} currentStatus={leave.status} />
                       </td>
                     </tr>
-                  );
-                })}
+                  ))}
               </tbody>
             </table>
           </div>

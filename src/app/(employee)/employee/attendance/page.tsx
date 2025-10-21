@@ -1,12 +1,19 @@
 import { getSession } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDate, formatDateTime } from '@/lib/utils';
 
 export default async function EmployeeAttendancePage() {
   const session = await getSession();
-  const attendance = db.getAttendance().filter(a => a.employeeId === session!.employeeId);
+  const attendance = await prisma.attendance.findMany({
+    where: {
+      employeeId: session!.employeeId!,
+    },
+    orderBy: {
+      date: 'desc',
+    },
+  });
 
   return (
     <div className="p-6 space-y-6">
@@ -34,10 +41,10 @@ export default async function EmployeeAttendancePage() {
               <tbody className="divide-y divide-gray-200">
                 {attendance.map((att) => (
                   <tr key={att.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm">{formatDate(att.date)}</td>
-                    <td className="px-4 py-3 text-sm">{att.punchIn ? formatDateTime(att.punchIn) : '-'}</td>
-                    <td className="px-4 py-3 text-sm">{att.punchOut ? formatDateTime(att.punchOut) : '-'}</td>
-                    <td className="px-4 py-3 text-sm">{att.totalHours || '-'} hrs</td>
+                    <td className="px-4 py-3 text-sm">{formatDate(att.date.toString())}</td>
+                    <td className="px-4 py-3 text-sm">{att.punchIn ? formatDateTime(att.punchIn.toString()) : '-'}</td>
+                    <td className="px-4 py-3 text-sm">{att.punchOut ? formatDateTime(att.punchOut.toString()) : '-'}</td>
+                    <td className="px-4 py-3 text-sm">{att.totalHours ? att.totalHours.toFixed(2) : '-'} hrs</td>
                     <td className="px-4 py-3 text-sm">
                       <Badge variant={att.status === 'PRESENT' ? 'default' : 'destructive'}>
                         {att.status}

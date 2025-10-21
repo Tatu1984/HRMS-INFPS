@@ -1,5 +1,5 @@
 import { getSession } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,10 +8,34 @@ import { CheckCircle, XCircle, Clock } from 'lucide-react';
 
 export default async function ManagerLeavePage() {
   const session = await getSession();
-  const allEmployees = db.getEmployees();
-  const teamMembers = allEmployees.filter(e => e.reportingHeadId === session!.employeeId);
-  const teamIds = teamMembers.map(t => t.id);
-  const leaves = db.getLeaves().filter(l => teamIds.includes(l.employeeId));
+
+  const teamMembers = await prisma.employee.findMany({
+    where: {
+      reportingHeadId: session!.employeeId!,
+    },
+  });
+
+  const teamIds = [session!.employeeId!, ...teamMembers.map(t => t.id)];
+
+  const leaves = await prisma.leave.findMany({
+    where: {
+      employeeId: {
+        in: teamIds,
+      },
+    },
+    include: {
+      employee: {
+        select: {
+          id: true,
+          name: true,
+          employeeId: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
 
   return (
     <div className="p-6 space-y-6">
@@ -40,10 +64,9 @@ export default async function ManagerLeavePage() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {leaves.map((leave) => {
-                  const emp = allEmployees.find(e => e.id === leave.employeeId);
                   return (
                     <tr key={leave.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm">{emp?.name}</td>
+                      <td className="px-4 py-3 text-sm">{leave.employee?.name || 'N/A'}</td>
                       <td className="px-4 py-3 text-sm">
                         <Badge variant="outline">{leave.leaveType}</Badge>
                       </td>

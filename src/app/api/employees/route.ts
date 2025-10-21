@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 import { getSession, hashPassword } from '@/lib/auth';
-import { generateId, generateEmployeeId } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,9 +9,38 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const employees = db.getEmployees();
+    const employees = await prisma.employee.findMany({
+      include: {
+        reportingHead: {
+          select: {
+            id: true,
+            name: true,
+            employeeId: true,
+          },
+        },
+        subordinates: {
+          select: {
+            id: true,
+            name: true,
+            employeeId: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
     return NextResponse.json(employees);
   } catch (error) {
+    console.error('Error fetching employees:', error);
     return NextResponse.json({ error: 'Failed to fetch employees' }, { status: 500 });
   }
 }
@@ -25,47 +53,68 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const employees = db.getEmployees();
-    const users = db.getUsers();
 
     // Check if email already exists
-    if (employees.some(e => e.email === body.email)) {
+    const existing = await prisma.employee.findUnique({
+      where: { email: body.email },
+    });
+
+    if (existing) {
       return NextResponse.json({ error: 'Email already exists' }, { status: 400 });
     }
 
-    const newEmployee = {
-      id: generateId(),
-      employeeId: generateEmployeeId(),
-      name: body.name,
-      email: body.email,
-      phone: body.phone,
-      altPhone: body.altPhone,
-      address: body.address,
-      designation: body.designation,
-      salary: body.salary,
-      department: body.department,
-      reportingHeadId: body.reportingHeadId || undefined,
-      dateOfJoining: body.dateOfJoining,
-      profilePicture: body.profilePicture,
-      documents: body.documents,
-    };
+    // Generate employee ID
+    const lastEmployee = await prisma.employee.findFirst({
+      orderBy: { employeeId: 'desc' },
+    });
 
-    employees.push(newEmployee);
-    db.saveEmployees(employees);
+    let empId: string;
+    if (lastEmployee && lastEmployee.employeeId.startsWith('EMP')) {
+      const lastNum = parseInt(lastEmployee.employeeId.replace('EMP', ''));
+      empId = `EMP${String(lastNum + 1).padStart(3, '0')}`;
+    } else {
+      empId = 'EMP001';
+    }
+
+    // Create employee
+    const newEmployee = await prisma.employee.create({
+      data: {
+        employeeId: empId,
+        name: body.name,
+        email: body.email,
+        phone: body.phone,
+        altPhone: body.altPhone,
+        address: body.address,
+        designation: body.designation,
+        salary: parseFloat(body.salary),
+        department: body.department,
+        reportingHeadId: body.reportingHeadId || undefined,
+        dateOfJoining: new Date(body.dateOfJoining),
+        profilePicture: body.profilePicture,
+        documents: body.documents || undefined,
+      },
+      include: {
+        reportingHead: {
+          select: {
+            id: true,
+            name: true,
+            employeeId: true,
+          },
+        },
+      },
+    });
 
     // Create user account
     const hashedPwd = await hashPassword('12345678'); // Default password
-    const newUser = {
-      id: generateId(),
-      email: body.email,
-      username: body.email.split('@')[0],
-      password: hashedPwd,
-      role: 'EMPLOYEE' as const,
-      employeeId: newEmployee.id,
-    };
-
-    users.push(newUser);
-    db.saveUsers(users);
+    await prisma.user.create({
+      data: {
+        email: body.email,
+        username: body.email.split('@')[0],
+        password: hashedPwd,
+        role: 'EMPLOYEE',
+        employeeId: newEmployee.id,
+      },
+    });
 
     return NextResponse.json({ success: true, employee: newEmployee }, { status: 201 });
   } catch (error) {

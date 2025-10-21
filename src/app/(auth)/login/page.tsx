@@ -66,11 +66,11 @@ export default function LoginPage() {
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Email or Username</Label>
               <Input
                 id="email"
-                type="email"
-                placeholder="admin@company.com"
+                type="text"
+                placeholder="admin or admin@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -94,12 +94,11 @@ export default function LoginPage() {
             </Button>
 
             <div className="text-sm text-gray-500 text-center mt-4 p-4 bg-gray-50 rounded-lg">
-              <p className="font-semibold mb-2">Demo Accounts:</p>
+              <p className="font-semibold mb-2">Demo Account:</p>
               <div className="space-y-1">
-                <p>👤 Admin: <strong>admin@company.com</strong></p>
-                <p>👤 Manager: <strong>manager@company.com</strong></p>
-                <p>👤 Employee: <strong>employee@company.com</strong></p>
-                <p className="mt-2">🔑 Password: <strong>12345678</strong></p>
+                <p>👤 Username: <strong>admin</strong></p>
+                <p>🔑 Password: <strong>admin123</strong></p>
+                <p className="text-xs mt-2 text-gray-400">You can also login with email or create new users via Employees page</p>
               </div>
             </div>
           </form>

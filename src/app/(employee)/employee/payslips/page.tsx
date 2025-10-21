@@ -1,5 +1,5 @@
 import { getSession } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
@@ -7,7 +7,15 @@ import { formatCurrency, getMonthName } from '@/lib/utils';
 
 export default async function EmployeePayslipsPage() {
   const session = await getSession();
-  const payroll = db.getPayroll().filter(p => p.employeeId === session!.employeeId);
+  const payroll = await prisma.payroll.findMany({
+    where: {
+      employeeId: session!.employeeId!,
+    },
+    orderBy: [
+      { year: 'desc' },
+      { month: 'desc' },
+    ],
+  });
 
   return (
     <div className="p-6 space-y-6">

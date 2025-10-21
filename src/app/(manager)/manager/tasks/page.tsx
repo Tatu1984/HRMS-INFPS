@@ -1,5 +1,5 @@
 import { getSession } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,11 +8,39 @@ import { formatDate } from '@/lib/utils';
 
 export default async function ManagerTasksPage() {
   const session = await getSession();
-  const allEmployees = db.getEmployees();
-  const teamMembers = allEmployees.filter(e => e.reportingHeadId === session!.employeeId);
-  const teamIds = teamMembers.map(t => t.id);
-  const tasks = db.getTasks().filter(t => teamIds.includes(t.assignedTo));
-  const projects = db.getProjects();
+
+  const teamMembers = await prisma.employee.findMany({
+    where: {
+      reportingHeadId: session!.employeeId!,
+    },
+  });
+
+  const teamIds = [session!.employeeId!, ...teamMembers.map(t => t.id)];
+
+  const tasks = await prisma.task.findMany({
+    where: {
+      assignedTo: {
+        in: teamIds,
+      },
+    },
+    include: {
+      employee: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      project: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
 
   return (
     <div className="p-6 space-y-6">
@@ -46,13 +74,11 @@ export default async function ManagerTasksPage() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {tasks.map((task) => {
-                  const emp = allEmployees.find(e => e.id === task.assignedTo);
-                  const project = projects.find(p => p.id === task.projectId);
                   return (
                     <tr key={task.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm font-medium">{task.title}</td>
-                      <td className="px-4 py-3 text-sm">{project?.name}</td>
-                      <td className="px-4 py-3 text-sm">{emp?.name}</td>
+                      <td className="px-4 py-3 text-sm">{task.project?.name || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm">{task.employee?.name || 'N/A'}</td>
                       <td className="px-4 py-3 text-sm">
                         <Badge variant={
                           task.priority === 'URGENT' ? 'destructive' :

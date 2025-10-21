@@ -203,13 +203,12 @@ export default function EmployeeFormDialog({ employee, employees = [], mode = 'c
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="reportingHead">Reporting Head</Label>
-            <Select value={formData.reportingHeadId} onValueChange={(val) => handleChange('reportingHeadId', val)}>
+            <Label htmlFor="reportingHead">Reporting Head (Optional)</Label>
+            <Select value={formData.reportingHeadId || undefined} onValueChange={(val) => handleChange('reportingHeadId', val)}>
               <SelectTrigger>
-                <SelectValue placeholder="Select reporting head" />
+                <SelectValue placeholder="Select reporting head (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
                 {employees.map((emp) => (
                   <SelectItem key={emp.id} value={emp.id!}>
                     {emp.name} - {emp.designation}

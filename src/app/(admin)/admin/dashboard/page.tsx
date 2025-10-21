@@ -1,30 +1,40 @@
 import { getSession } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  Users, FolderKanban, Calendar, DollarSign, 
-  TrendingUp, TrendingDown, Plus, UserPlus, 
+import {
+  Users, FolderKanban, Calendar, DollarSign,
+  TrendingUp, TrendingDown, Plus, UserPlus,
   CheckSquare, Receipt, Download, Filter, Eye, Edit
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import Link from 'next/link';
 
 export default async function AdminDashboard() {
   const session = await getSession();
-  const employees = db.getEmployees();
-  const projects = db.getProjects();
-  const leaves = db.getLeaves();
-  const payroll = db.getPayroll();
+
+  const employees = await prisma.employee.findMany();
+  const projects = await prisma.project.findMany();
+  const leaves = await prisma.leave.findMany();
+  const payroll = await prisma.payroll.findMany();
+  const leads = await prisma.lead.findMany();
+  const sales = await prisma.sale.findMany();
 
   const activeProjects = projects.filter(p => p.status === 'ACTIVE').length;
   const pendingLeaves = leaves.filter(l => l.status === 'PENDING').length;
-  
+
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
   const monthlyPayroll = payroll
     .filter(p => p.month === currentMonth && p.year === currentYear)
     .reduce((sum, p) => sum + p.netSalary, 0);
+
+  // Sales/CRM Stats
+  const activeLeads = leads.filter(l => !['CONVERTED', 'LOST'].includes(l.status)).length;
+  const convertedLeads = leads.filter(l => l.status === 'CONVERTED').length;
+  const totalSalesRevenue = sales.filter(s => s.status !== 'CANCELLED').reduce((sum, s) => sum + s.netAmount, 0);
+  const pendingSales = sales.filter(s => s.status === 'PENDING').length;
 
   const stats = [
     { 
@@ -61,7 +71,9 @@ export default async function AdminDashboard() {
     { label: 'Add Employee', icon: UserPlus, color: 'bg-blue-600', href: '/admin/employees' },
     { label: 'New Project', icon: Plus, color: 'bg-green-600', href: '/admin/projects' },
     { label: 'Approve Leaves', icon: CheckSquare, color: 'bg-orange-600', href: '/admin/leave-management' },
-    { label: 'Generate Invoice', icon: Receipt, color: 'bg-purple-600', href: '/admin/invoices' }
+    { label: 'Generate Invoice', icon: Receipt, color: 'bg-purple-600', href: '/admin/invoices' },
+    { label: 'Add Lead', icon: Plus, color: 'bg-indigo-600', href: '/admin/leads' },
+    { label: 'New Sale', icon: Plus, color: 'bg-teal-600', href: '/admin/sales' }
   ];
 
   return (
@@ -92,10 +104,10 @@ export default async function AdminDashboard() {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-6 gap-4">
             {quickActions.map((action, idx) => (
-              <Button 
-                key={idx} 
+              <Button
+                key={idx}
                 className={`${action.color} h-24 flex-col gap-2`}
                 asChild
               >
@@ -108,6 +120,87 @@ export default async function AdminDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Sales Pipeline Widget */}
+      <div className="grid grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Sales Pipeline</CardTitle>
+              <Link href="/admin/leads">
+                <Button variant="outline" size="sm">View All</Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Active Leads</p>
+                  <p className="text-2xl font-bold">{activeLeads}</p>
+                </div>
+                <div className="bg-blue-100 p-3 rounded-lg">
+                  <TrendingUp className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Converted</p>
+                  <p className="text-2xl font-bold text-green-600">{convertedLeads}</p>
+                </div>
+                <div className="bg-green-100 p-3 rounded-lg">
+                  <CheckSquare className="w-6 h-6 text-green-600" />
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t">
+                <span className="text-sm font-medium">Conversion Rate</span>
+                <Badge className="bg-green-100 text-green-700">
+                  {leads.length > 0 ? ((convertedLeads / leads.length) * 100).toFixed(1) : '0'}%
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Sales Revenue</CardTitle>
+              <Link href="/admin/sales">
+                <Button variant="outline" size="sm">View All</Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Total Revenue</p>
+                  <p className="text-2xl font-bold text-green-600">{formatCurrency(totalSalesRevenue)}</p>
+                </div>
+                <div className="bg-green-100 p-3 rounded-lg">
+                  <DollarSign className="w-6 h-6 text-green-600" />
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Total Sales</p>
+                  <p className="text-2xl font-bold">{sales.length}</p>
+                </div>
+                <div className="bg-blue-100 p-3 rounded-lg">
+                  <Receipt className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t">
+                <span className="text-sm font-medium">Pending</span>
+                <Badge className="bg-yellow-100 text-yellow-700">
+                  {pendingSales}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Employee List */}
       <Card>

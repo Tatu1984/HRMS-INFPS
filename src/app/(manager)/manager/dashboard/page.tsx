@@ -1,5 +1,5 @@
 import { getSession } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users, FolderKanban, Calendar, CheckSquare } from 'lucide-react';
@@ -7,13 +7,43 @@ import { formatCurrency } from '@/lib/utils';
 
 export default async function ManagerDashboard() {
   const session = await getSession();
-  const employee = db.getEmployeeById(session!.employeeId);
-  const projects = db.getProjects().filter(p => p.managerId === session!.employeeId);
-  const allEmployees = db.getEmployees();
-  const teamMembers = allEmployees.filter(e => e.reportingHeadId === session!.employeeId);
-  const leaves = db.getLeaves().filter(l => 
-    teamMembers.some(tm => tm.id === l.employeeId) && l.status === 'PENDING'
-  );
+
+  const employee = await prisma.employee.findUnique({
+    where: { id: session!.employeeId! },
+    include: {
+      subordinates: true,
+    },
+  });
+
+  const teamMembers = employee?.subordinates || [];
+
+  const projects = await prisma.project.findMany({
+    include: {
+      members: {
+        where: {
+          employeeId: session!.employeeId!,
+        },
+      },
+      tasks: true,
+    },
+  });
+
+  const leaves = await prisma.leave.findMany({
+    where: {
+      employeeId: {
+        in: teamMembers.map(tm => tm.id),
+      },
+      status: 'PENDING',
+    },
+  });
+
+  const teamTasks = await prisma.task.findMany({
+    where: {
+      assignedTo: {
+        in: [session!.employeeId!, ...teamMembers.map(tm => tm.id)],
+      },
+    },
+  });
 
   return (
     <div className="p-6 space-y-6">
@@ -83,7 +113,7 @@ export default async function ManagerDashboard() {
               <div>
                 <p className="text-sm text-gray-500">Tasks Assigned</p>
                 <p className="text-2xl font-bold">
-                  {db.getTasks().filter(t => teamMembers.some(tm => tm.id === t.assignedTo)).length}
+                  {teamTasks.length}
                 </p>
               </div>
             </div>

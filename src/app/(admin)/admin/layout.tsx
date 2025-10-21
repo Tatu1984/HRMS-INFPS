@@ -10,6 +10,8 @@ const sidebarItems = [
   { icon: 'Calendar', label: 'Leave Management', href: '/admin/leave-management' },
   { icon: 'FolderKanban', label: 'Projects', href: '/admin/projects' },
   { icon: 'CheckSquare', label: 'Tasks', href: '/admin/tasks' },
+  { icon: 'TrendingUp', label: 'Leads', href: '/admin/leads' },
+  { icon: 'ShoppingCart', label: 'Sales', href: '/admin/sales' },
   { icon: 'DollarSign', label: 'Payroll', href: '/admin/payroll' },
   { icon: 'Receipt', label: 'Invoices', href: '/admin/invoices' },
   { icon: 'Wallet', label: 'Accounts', href: '/admin/accounts' },

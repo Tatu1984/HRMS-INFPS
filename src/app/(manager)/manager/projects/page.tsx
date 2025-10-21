@@ -1,5 +1,5 @@
 import { getSession } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,32 @@ import { formatDate } from '@/lib/utils';
 
 export default async function ManagerProjectsPage() {
   const session = await getSession();
-  const projects = db.getProjects().filter(p => p.managerId === session!.employeeId);
+
+  const projects = await prisma.project.findMany({
+    where: {
+      members: {
+        some: {
+          employeeId: session!.employeeId!,
+        },
+      },
+    },
+    include: {
+      members: {
+        include: {
+          employee: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      tasks: true,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
 
   return (
     <div className="p-6 space-y-6">

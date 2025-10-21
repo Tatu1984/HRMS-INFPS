@@ -1,3 +1,12 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -33,6 +42,7 @@ model Employee {
   tasks             Task[]
   projects          ProjectMember[]
   messages          Message[]
+  payroll           Payroll[]
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 }
@@ -50,6 +60,8 @@ model Attendance {
   status      AttendanceStatus @default(ABSENT)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@unique([employeeId, date], name: "employeeId_date")
 }
 
 model Leave {
@@ -93,8 +105,8 @@ model ProjectMember {
 
 model Task {
   id          String      @id @default(cuid())
-  projectId   String
-  project     Project     @relation(fields: [projectId], references: [id])
+  projectId   String?
+  project     Project?    @relation(fields: [projectId], references: [id])
   assignedTo  String
   employee    Employee    @relation(fields: [assignedTo], references: [id])
   title       String
@@ -109,17 +121,21 @@ model Task {
 model Payroll {
   id              String    @id @default(cuid())
   employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id])
   month           Int
   year            Int
   baseSalary      Float
-  deductions      Json?
-  bonuses         Json?
+  grossSalary     Float
+  deductions      Float     @default(0)
+  pfDeduction     Float     @default(0)
+  esiDeduction    Float     @default(0)
+  taxDeduction    Float     @default(0)
   netSalary       Float
-  absent          Int
-  present         Int
-  target          Float?
-  targetAchieved  Float?
+  daysPresent     Int       @default(0)
+  daysAbsent      Int       @default(0)
+  status          PayrollStatus @default(PENDING)
   createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 model SalaryConfig {
@@ -132,39 +148,41 @@ model SalaryConfig {
 }
 
 model Invoice {
-  id              String    @id @default(cuid())
-  invoiceNumber   String    @unique
+  id              String          @id @default(cuid())
+  invoiceNumber   String          @unique
   clientName      String
-  clientEmail     String
+  clientEmail     String?
   amount          Float
-  currency        String    @default("INR")
-  status          InvoiceStatus @default(DRAFT)
-  items           Json
-  issuedDate      DateTime
-  dueDate         DateTime
-  skyDoSynced     Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  currency        String          @default("INR")
+  status          InvoiceStatus   @default(DRAFT)
+  items           Json?
+  dueDate         DateTime?
+  notes           String?
+  skyDoSynced     Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 }
 
 model Account {
-  id          String        @id @default(cuid())
+  id          String          @id @default(cuid())
   type        AccountType
-  purpose     String
-  description String?
-  category    String
-  subCategory String?
+  categoryId  String
+  category    AccountCategory @relation(fields: [categoryId], references: [id])
   amount      Float
   date        DateTime
-  createdAt   DateTime      @default(now())
+  description String?
+  reference   String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 }
 
 model AccountCategory {
-  id            String   @id @default(cuid())
-  name          String   @unique
+  id            String      @id @default(cuid())
+  name          String      @unique
   type          AccountType
   subCategories Json?
-  createdAt     DateTime @default(now())
+  accounts      Account[]
+  createdAt     DateTime    @default(now())
 }
 
 model Message {
@@ -177,6 +195,51 @@ model Message {
   read        Boolean     @default(false)
   tracked     Boolean     @default(true)
   createdAt   DateTime    @default(now())
+}
+
+model Lead {
+  id            String          @id @default(cuid())
+  leadNumber    String          @unique
+  companyName   String
+  contactName   String
+  email         String
+  phone         String
+  source        String?         // Website, Referral, Cold Call, etc
+  status        CRMLeadStatus   @default(NEW)
+  assignedTo    String?
+  value         Float?          // Estimated deal value
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  convertedAt   DateTime?
+  saleId        String?         @unique
+  sale          Sale?           @relation(fields: [saleId], references: [id])
+}
+
+model Sale {
+  id              String      @id @default(cuid())
+  saleNumber      String      @unique
+  leadId          String?     @unique
+  lead            Lead?
+  companyName     String
+  contactName     String
+  email           String
+  phone           String
+  product         String
+  quantity        Int         @default(1)
+  unitPrice       Float
+  grossAmount     Float       // Total before discounts
+  discount        Float       @default(0)
+  taxPercentage   Float       @default(0)
+  taxAmount       Float       @default(0)
+  netAmount       Float       // Final amount after discount + tax
+  status          SaleStatus  @default(PENDING)
+  closedBy        String?     // Employee ID who closed the sale
+  closedAt        DateTime?
+  notes           String?
+  accountSynced   Boolean     @default(false) // Whether financial entry created
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 }
 
 enum Role {
@@ -239,4 +302,28 @@ enum InvoiceStatus {
 enum AccountType {
   INCOME
   EXPENSE
+}
+
+enum CRMLeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  CONVERTED
+  LOST
+}
+
+enum SaleStatus {
+  PENDING
+  CONFIRMED
+  DELIVERED
+  PAID
+  CANCELLED
+}
+
+enum PayrollStatus {
+  PENDING
+  APPROVED
+  PAID
 }

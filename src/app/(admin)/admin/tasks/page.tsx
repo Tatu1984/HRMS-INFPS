@@ -1,14 +1,45 @@
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { TaskDialog } from '@/components/forms/task-dialog';
 
 export default async function TasksPage() {
-  const tasks = db.getTasks();
-  const employees = db.getEmployees();
-  const projects = db.getProjects();
+  const tasks = await prisma.task.findMany({
+    include: {
+      employee: {
+        select: {
+          id: true,
+          name: true,
+          employeeId: true,
+        },
+      },
+      project: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  const employees = await prisma.employee.findMany({
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
+  const projects = await prisma.project.findMany({
+    select: {
+      id: true,
+      name: true,
+    },
+  });
 
   return (
     <div className="p-6 space-y-6">
@@ -17,10 +48,7 @@ export default async function TasksPage() {
           <h1 className="text-3xl font-bold">Tasks</h1>
           <p className="text-gray-600">Manage and assign tasks to team members</p>
         </div>
-        <Button className="bg-blue-600">
-          <Plus className="w-4 h-4 mr-2" />
-          New Task
-        </Button>
+        <TaskDialog employees={employees} projects={projects} />
       </div>
 
       <Card>
@@ -43,13 +71,11 @@ export default async function TasksPage() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {tasks.map((task) => {
-                  const emp = employees.find(e => e.id === task.assignedTo);
-                  const project = projects.find(p => p.id === task.projectId);
                   return (
                     <tr key={task.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm font-medium">{task.title}</td>
-                      <td className="px-4 py-3 text-sm">{project?.name}</td>
-                      <td className="px-4 py-3 text-sm">{emp?.name}</td>
+                      <td className="px-4 py-3 text-sm">{task.project?.name || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm">{task.employee?.name || 'N/A'}</td>
                       <td className="px-4 py-3 text-sm">
                         <Badge variant={
                           task.priority === 'URGENT' ? 'destructive' :

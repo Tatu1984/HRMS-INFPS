@@ -1,16 +1,37 @@
 // ============================================
 // FILE: src/app/(admin)/admin/employees/page.tsx
 // ============================================
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Search, Download, Trash2 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import EmployeeFormDialog from '@/components/admin/employee-form-dialog';
 import DeleteEmployeeButton from '@/components/admin/delete-employee-button';
+import { UserCredentialsDialog } from '@/components/forms/user-credentials-dialog';
 
 export default async function EmployeesPage() {
-  const employees = db.getEmployees();
+  const employees = await prisma.employee.findMany({
+    include: {
+      reportingHead: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      user: {
+        select: {
+          id: true,
+          username: true,
+          role: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
 
   return (
     <div className="p-6 space-y-6">
@@ -50,7 +71,7 @@ export default async function EmployeesPage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Designation</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Department</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Salary</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">DOJ</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Login Access</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Actions</th>
                 </tr>
               </thead>
@@ -64,10 +85,32 @@ export default async function EmployeesPage() {
                     <td className="px-4 py-3 text-sm">{emp.designation}</td>
                     <td className="px-4 py-3 text-sm">{emp.department}</td>
                     <td className="px-4 py-3 text-sm font-semibold">{formatCurrency(emp.salary)}</td>
-                    <td className="px-4 py-3 text-sm">{formatDate(emp.dateOfJoining)}</td>
+                    <td className="px-4 py-3 text-sm">
+                      {emp.user ? (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-green-100 text-green-700">
+                              {emp.user.role}
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-gray-500">@{emp.user.username}</div>
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="text-gray-500">No Access</Badge>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-sm">
                       <div className="flex gap-2">
                         <EmployeeFormDialog employee={emp} employees={employees} mode="edit" />
+                        <UserCredentialsDialog
+                          employee={{
+                            id: emp.id,
+                            employeeId: emp.employeeId,
+                            name: emp.name,
+                            email: emp.email,
+                          }}
+                          existingUser={emp.user}
+                        />
                         <DeleteEmployeeButton employeeId={emp.id} employeeName={emp.name} />
                       </div>
                     </td>

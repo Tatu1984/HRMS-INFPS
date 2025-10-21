@@ -1,20 +1,78 @@
 import { getSession } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Clock, Calendar, CheckSquare, MessageSquare, Activity } from 'lucide-react';
+import { Calendar, CheckSquare, MessageSquare, Activity } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { AttendanceControls } from '@/components/employee/AttendanceControls';
+import { format } from 'date-fns';
 
 export default async function EmployeeDashboard() {
   const session = await getSession();
-  const employee = db.getEmployeeById(session!.employeeId);
-  const tasks = db.getTasks().filter(t => t.assignedTo === session!.employeeId);
-  const leaves = db.getLeaves().filter(l => l.employeeId === session!.employeeId);
-  const messages = db.getMessages().filter(m => m.recipientId === session!.employeeId && !m.read);
+
+  const employee = await prisma.employee.findUnique({
+    where: { id: session!.employeeId! },
+    include: {
+      reportingHead: {
+        select: {
+          id: true,
+          name: true,
+          designation: true,
+        },
+      },
+    },
+  });
+
+  const tasks = await prisma.task.findMany({
+    where: { assignedTo: session!.employeeId! },
+  });
+
+  const leaves = await prisma.leave.findMany({
+    where: { employeeId: session!.employeeId! },
+  });
+
+  const messages = await prisma.message.findMany({
+    where: {
+      recipientId: session!.employeeId!,
+      read: false,
+    },
+  });
+
+  // Get today's attendance
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const todayAttendance = await prisma.attendance.findFirst({
+    where: {
+      employeeId: session!.employeeId!,
+      date: {
+        gte: today,
+        lt: tomorrow,
+      },
+    },
+  });
+
+  // Calculate attendance percentage (last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const recentAttendance = await prisma.attendance.findMany({
+    where: {
+      employeeId: session!.employeeId!,
+      date: { gte: thirtyDaysAgo },
+    },
+  });
+
+  const presentDays = recentAttendance.filter(a => a.status === 'PRESENT').length;
+  const attendancePercentage = recentAttendance.length > 0
+    ? ((presentDays / recentAttendance.length) * 100).toFixed(1)
+    : '0.0';
 
   const activeTasks = tasks.filter(t => t.status !== 'COMPLETED').length;
-  const leavesLeft = 24; // Calculate based on leave records
+  const approvedLeaves = leaves.filter(l => l.status === 'APPROVED').length;
+  const leavesLeft = 24 - approvedLeaves; // Assuming 24 total leaves
 
   return (
     <div className="p-6 space-y-6">
@@ -23,21 +81,15 @@ export default async function EmployeeDashboard() {
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold mb-1">Today's Status</h3>
-              <p className="text-sm text-blue-100">Monday, October 20, 2025</p>
+              <h3 className="text-lg font-semibold mb-1">Today&apos;s Status</h3>
+              <p className="text-sm text-blue-100">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right mr-6">
                 <p className="text-sm text-blue-100">Current Salary</p>
                 <p className="text-2xl font-bold">{formatCurrency(employee?.salary || 0)}</p>
               </div>
-              <Button className="bg-white text-blue-600 hover:bg-blue-50">
-                <Clock className="w-4 h-4 mr-2" />
-                Punch In
-              </Button>
-              <Button variant="outline" className="border-white text-white hover:bg-blue-700">
-                Break
-              </Button>
+              <AttendanceControls attendance={todayAttendance} />
             </div>
           </div>
         </CardContent>
@@ -53,7 +105,7 @@ export default async function EmployeeDashboard() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Attendance %</p>
-                <p className="text-2xl font-bold">95.8%</p>
+                <p className="text-2xl font-bold">{attendancePercentage}%</p>
               </div>
             </div>
           </CardContent>
@@ -115,17 +167,17 @@ export default async function EmployeeDashboard() {
                 <p className="text-xs text-gray-500">Chief Executive Officer</p>
               </div>
               <div className="h-8 w-px bg-gray-300 mx-auto"></div>
-              {employee?.reportingHeadId && (
+              {employee?.reportingHead && (
                 <>
                   <div className="inline-block">
                     <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white text-xl font-bold mb-2">
-                      PM
+                      {employee.reportingHead.name.split(' ').map(n => n[0]).join('')}
                     </div>
                     <p className="font-semibold">
-                      {db.getEmployeeById(employee.reportingHeadId)?.name}
+                      {employee.reportingHead.name}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {db.getEmployeeById(employee.reportingHeadId)?.designation}
+                      {employee.reportingHead.designation}
                     </p>
                     <Badge className="mt-1">Your Manager</Badge>
                   </div>

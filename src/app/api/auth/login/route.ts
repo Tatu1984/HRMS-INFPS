@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 import { setSession, verifyPassword } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
@@ -7,10 +7,28 @@ export async function POST(request: NextRequest) {
     const { email, password } = await request.json();
 
     if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+      return NextResponse.json({ error: 'Email/Username and password are required' }, { status: 400 });
     }
 
-    const user = db.getUserByEmail(email);
+    // Try to find user by email or username
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: email },
+          { username: email }, // Allow login with username too
+        ],
+      },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            employeeId: true,
+          },
+        },
+      },
+    });
+
     if (!user) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
@@ -20,20 +38,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    const employee = db.getEmployeeById(user.employeeId);
-
     await setSession({
       userId: user.id,
       email: user.email,
       role: user.role,
-      employeeId: user.employeeId,
-      name: employee?.name || user.username,
+      employeeId: user.employeeId || undefined,
+      name: user.employee?.name || user.username,
     });
 
     return NextResponse.json({
       success: true,
       role: user.role,
-      name: employee?.name || user.username,
+      name: user.employee?.name || user.username,
     });
   } catch (error) {
     console.error('Login error:', error);
