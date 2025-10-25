@@ -94,11 +94,12 @@ export default function LoginPage() {
             </Button>
 
             <div className="text-sm text-gray-500 text-center mt-4 p-4 bg-gray-50 rounded-lg">
-              <p className="font-semibold mb-2">Demo Account:</p>
+              <p className="font-semibold mb-2">Demo Accounts:</p>
               <div className="space-y-1">
-                <p>👤 Username: <strong>admin</strong></p>
-                <p>🔑 Password: <strong>admin123</strong></p>
-                <p className="text-xs mt-2 text-gray-400">You can also login with email or create new users via Employees page</p>
+                <p>👤 Username: <strong>admin</strong> / Password: <strong>12345678</strong></p>
+                <p>👤 Username: <strong>manager</strong> / Password: <strong>12345678</strong></p>
+                <p>👤 Username: <strong>employee</strong> / Password: <strong>12345678</strong></p>
+                <p className="text-xs mt-2 text-gray-400">You can also login with email</p>
               </div>
             </div>
           </form>

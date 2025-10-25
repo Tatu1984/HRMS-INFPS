@@ -52,7 +52,23 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { companyName, contactName, email, phone, source, value, assignedTo, notes } = body;
+    const {
+      companyName,
+      companyAddress,
+      contactName,
+      email,
+      phone,
+      altPhone,
+      projectType,
+      estimatedValue,
+      source,
+      executiveName,
+      communicationDetails,
+      status,
+      callbackDateTime,
+      assignedTo,
+      notes
+    } = body;
 
     if (!companyName || !contactName || !email || !phone) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -75,14 +91,20 @@ export async function POST(request: NextRequest) {
       data: {
         leadNumber,
         companyName,
+        companyAddress: companyAddress || null,
         contactName,
         email,
         phone,
+        altPhone: altPhone || null,
+        projectType: projectType || null,
+        estimatedValue: estimatedValue ? parseFloat(estimatedValue) : null,
         source: source || null,
-        value: value ? parseFloat(value) : null,
+        executiveName: executiveName || null,
+        communicationDetails: communicationDetails || null,
+        status: status || 'NEW',
+        callbackDateTime: callbackDateTime ? new Date(callbackDateTime) : null,
         assignedTo: assignedTo || null,
         notes: notes || null,
-        status: 'NEW',
       },
     });
 
@@ -102,7 +124,24 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, companyName, contactName, email, phone, source, status, value, assignedTo, notes } = body;
+    const {
+      id,
+      companyName,
+      companyAddress,
+      contactName,
+      email,
+      phone,
+      altPhone,
+      projectType,
+      estimatedValue,
+      source,
+      executiveName,
+      communicationDetails,
+      status,
+      callbackDateTime,
+      assignedTo,
+      notes
+    } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Lead ID required' }, { status: 400 });
@@ -119,12 +158,18 @@ export async function PUT(request: NextRequest) {
     const updateData: any = {};
 
     if (companyName) updateData.companyName = companyName;
+    if (companyAddress !== undefined) updateData.companyAddress = companyAddress;
     if (contactName) updateData.contactName = contactName;
     if (email) updateData.email = email;
     if (phone) updateData.phone = phone;
+    if (altPhone !== undefined) updateData.altPhone = altPhone;
+    if (projectType !== undefined) updateData.projectType = projectType;
+    if (estimatedValue !== undefined) updateData.estimatedValue = estimatedValue ? parseFloat(estimatedValue) : null;
     if (source !== undefined) updateData.source = source;
+    if (executiveName !== undefined) updateData.executiveName = executiveName;
+    if (communicationDetails !== undefined) updateData.communicationDetails = communicationDetails;
     if (status) updateData.status = status;
-    if (value !== undefined) updateData.value = value ? parseFloat(value) : null;
+    if (callbackDateTime !== undefined) updateData.callbackDateTime = callbackDateTime ? new Date(callbackDateTime) : null;
     if (assignedTo !== undefined) updateData.assignedTo = assignedTo;
     if (notes !== undefined) updateData.notes = notes;
 

@@ -8,7 +8,7 @@ export async function PUT(
 ) {
   try {
     const body = await req.json();
-    const { username, password, role } = body;
+    const { username, password, role, permissions } = body;
 
     if (!username) {
       return NextResponse.json(
@@ -37,6 +37,7 @@ export async function PUT(
     const updateData: any = {
       username,
       role: role || 'EMPLOYEE',
+      permissions: permissions || null,
     };
 
     // Only update password if provided

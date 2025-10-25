@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -13,9 +13,20 @@ import { useRouter } from 'next/navigation';
 interface TaskDialogProps {
   employees: Array<{ id: string; name: string }>;
   projects?: Array<{ id: string; name: string }>;
+  defaultProjectId?: string;
+  defaultMilestone?: string;
+  milestones?: any[];
+  trigger?: React.ReactNode;
 }
 
-export function TaskDialog({ employees, projects }: TaskDialogProps) {
+export function TaskDialog({
+  employees,
+  projects,
+  defaultProjectId,
+  defaultMilestone,
+  milestones,
+  trigger
+}: TaskDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -23,10 +34,22 @@ export function TaskDialog({ employees, projects }: TaskDialogProps) {
     title: '',
     description: '',
     assignedTo: '',
-    projectId: '',
+    projectId: defaultProjectId || '',
+    milestone: defaultMilestone || '',
     priority: 'MEDIUM',
+    status: 'PENDING',
     dueDate: '',
   });
+
+  // Update projectId and milestone when props change
+  useEffect(() => {
+    if (defaultProjectId) {
+      setFormData(prev => ({ ...prev, projectId: defaultProjectId }));
+    }
+    if (defaultMilestone) {
+      setFormData(prev => ({ ...prev, milestone: defaultMilestone }));
+    }
+  }, [defaultProjectId, defaultMilestone]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,8 +72,10 @@ export function TaskDialog({ employees, projects }: TaskDialogProps) {
           title: '',
           description: '',
           assignedTo: '',
-          projectId: '',
+          projectId: defaultProjectId || '',
+          milestone: defaultMilestone || '',
           priority: 'MEDIUM',
+          status: 'PENDING',
           dueDate: '',
         });
         router.refresh();
@@ -69,10 +94,12 @@ export function TaskDialog({ employees, projects }: TaskDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-blue-600">
-          <Plus className="w-4 h-4 mr-2" />
-          New Task
-        </Button>
+        {trigger || (
+          <Button className="bg-blue-600">
+            <Plus className="w-4 h-4 mr-2" />
+            New Task
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
@@ -134,7 +161,41 @@ export function TaskDialog({ employees, projects }: TaskDialogProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {milestones && milestones.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="milestone">Milestone (Optional)</Label>
+              <Select value={formData.milestone || undefined} onValueChange={(value) => setFormData({ ...formData, milestone: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select milestone (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No Milestone</SelectItem>
+                  {milestones.map((milestone: any) => (
+                    <SelectItem key={milestone.id} value={milestone.id}>
+                      {milestone.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="status">Status *</Label>
+              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PENDING">Pending</SelectItem>
+                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                  <SelectItem value="HOLD">On Hold</SelectItem>
+                  <SelectItem value="COMPLETED">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="priority">Priority *</Label>
               <Select value={formData.priority} onValueChange={(value) => setFormData({ ...formData, priority: value })}>

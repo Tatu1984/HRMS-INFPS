@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { UserPlus, Loader2, Key } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -22,6 +23,7 @@ interface UserCredentialsDialogProps {
     id: string;
     username: string;
     role: string;
+    permissions?: any;
   } | null;
 }
 
@@ -35,6 +37,51 @@ export function UserCredentialsDialog({ employee, existingUser }: UserCredential
     confirmPassword: '',
     role: existingUser?.role || 'EMPLOYEE',
   });
+
+  const [permissions, setPermissions] = useState({
+    dashboard: true,
+    employees: false,
+    attendance: true,
+    leaves: true,
+    projects: false,
+    tasks: true,
+    payroll: false,
+    accounts: false,
+    invoices: false,
+    reports: false,
+    leads: false,
+    sales: false,
+    messages: true,
+    settings: false,
+  });
+
+  // Load existing permissions when editing
+  useEffect(() => {
+    if (existingUser?.permissions) {
+      setPermissions(existingUser.permissions);
+    }
+  }, [existingUser]);
+
+  const togglePermission = (key: string) => {
+    setPermissions(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const permissionSections = [
+    { key: 'dashboard', label: 'Dashboard' },
+    { key: 'employees', label: 'Employees' },
+    { key: 'attendance', label: 'Attendance' },
+    { key: 'leaves', label: 'Leave Management' },
+    { key: 'projects', label: 'Projects' },
+    { key: 'tasks', label: 'Tasks' },
+    { key: 'payroll', label: 'Payroll' },
+    { key: 'accounts', label: 'Accounts' },
+    { key: 'invoices', label: 'Invoices' },
+    { key: 'reports', label: 'Reports' },
+    { key: 'leads', label: 'Leads' },
+    { key: 'sales', label: 'Sales' },
+    { key: 'messages', label: 'Messages' },
+    { key: 'settings', label: 'Settings' },
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +105,7 @@ export function UserCredentialsDialog({ employee, existingUser }: UserCredential
       const body: any = {
         username: formData.username,
         role: formData.role,
+        permissions: permissions,
       };
 
       if (employee) {
@@ -110,7 +158,7 @@ export function UserCredentialsDialog({ employee, existingUser }: UserCredential
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {existingUser ? 'Edit User Access' : 'Create Login Credentials'}
@@ -179,6 +227,32 @@ export function UserCredentialsDialog({ employee, existingUser }: UserCredential
                 <SelectItem value="ADMIN">Admin</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-3 pt-2">
+            <Label className="text-sm font-semibold">Section Permissions</Label>
+            <div className="border rounded-lg p-4 bg-gray-50 max-h-64 overflow-y-auto">
+              <div className="grid grid-cols-2 gap-3">
+                {permissionSections.map((section) => (
+                  <div key={section.key} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={section.key}
+                      checked={permissions[section.key as keyof typeof permissions]}
+                      onCheckedChange={() => togglePermission(section.key)}
+                    />
+                    <label
+                      htmlFor={section.key}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      {section.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <p className="text-xs text-gray-500">
+              Select which sections this user can access in the system
+            </p>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

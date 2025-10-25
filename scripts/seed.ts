@@ -124,8 +124,12 @@ async function seed() {
   // Create project
   const project = await prisma.project.create({
     data: {
+      projectId: 'PRJ00001',
       name: 'HRMS Development',
       description: 'Building a comprehensive HR Management System',
+      projectType: 'MILESTONE',
+      totalBudget: 500000,
+      upfrontPayment: 100000,
       startDate: new Date('2025-01-01'),
       status: 'ACTIVE',
       milestones: {

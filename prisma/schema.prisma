@@ -15,6 +15,7 @@ model User {
   role          Role      @default(EMPLOYEE)
   employeeId    String?   @unique
   employee      Employee? @relation(fields: [employeeId], references: [id])
+  permissions   Json?     // Granular section-level permissions
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -28,8 +29,12 @@ model Employee {
   altPhone          String?
   address           String
   designation       String
-  salary            Float
+  salary            Float       // Total CTC or Basic + Variable
+  basicSalary       Float?      // Basic salary component
+  variablePay       Float?      // Variable/incentive component
   department        String
+  employeeType      String?     // Sales, Operations, etc.
+  salesTarget       Float?      // Monthly sales target (for sales dept)
   reportingHeadId   String?
   reportingHead     Employee?   @relation("ReportingStructure", fields: [reportingHeadId], references: [id])
   subordinates      Employee[]  @relation("ReportingStructure")
@@ -48,49 +53,60 @@ model Employee {
 }
 
 model Attendance {
-  id          String    @id @default(cuid())
-  employeeId  String
-  employee    Employee  @relation(fields: [employeeId], references: [id])
-  date        DateTime
-  punchIn     DateTime?
-  punchOut    DateTime?
-  breakStart  DateTime?
-  breakEnd    DateTime?
-  totalHours  Float?
-  status      AttendanceStatus @default(ABSENT)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  employeeId     String
+  employee       Employee  @relation(fields: [employeeId], references: [id])
+  date           DateTime
+  punchIn        DateTime?
+  punchOut       DateTime?
+  breakStart     DateTime?
+  breakEnd       DateTime?
+  totalHours     Float?
+  breakDuration  Float?    // Total break time in hours
+  idleTime       Float?    // Idle time in hours (logged in but inactive)
+  status         AttendanceStatus @default(ABSENT)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@unique([employeeId, date], name: "employeeId_date")
 }
 
 model Leave {
-  id          String      @id @default(cuid())
-  employeeId  String
-  employee    Employee    @relation(fields: [employeeId], references: [id])
-  leaveType   LeaveType
-  startDate   DateTime
-  endDate     DateTime
-  days        Int
-  reason      String
-  status      LeaveStatus @default(PENDING)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id           String      @id @default(cuid())
+  employeeId   String
+  employee     Employee    @relation(fields: [employeeId], references: [id])
+  leaveType    LeaveType
+  startDate    DateTime
+  endDate      DateTime
+  days         Int
+  reason       String
+  status       LeaveStatus @default(PENDING)
+  adminComment String?     // Admin comment when approving/rejecting/holding
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 }
 
 model Project {
-  id              String    @id @default(cuid())
+  id              String          @id @default(cuid())
+  projectId       String          @unique // Auto-generated project ID
   name            String
   description     String
+  sowDocument     String?         // Path/URL to signed SoW document
+  projectType     ProjectType     @default(MILESTONE)
+  totalBudget     Float?
+  upfrontPayment  Float?          @default(0)
+  currency        String          @default("USD")
   startDate       DateTime
   endDate         DateTime?
-  status          ProjectStatus @default(ACTIVE)
-  milestones      Json?
+  status          ProjectStatus   @default(ACTIVE)
+  milestones      Json?           // Array of milestone details with success criteria and payment
   successCriteria String?
+  leadId          String?         // Reference to Lead if converted from sales
+  saleId          String?         // Reference to Sale if created from sale
   members         ProjectMember[]
   tasks           Task[]
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 }
 
 model ProjectMember {
@@ -104,38 +120,70 @@ model ProjectMember {
 }
 
 model Task {
-  id          String      @id @default(cuid())
-  projectId   String?
-  project     Project?    @relation(fields: [projectId], references: [id])
-  assignedTo  String
-  employee    Employee    @relation(fields: [assignedTo], references: [id])
-  title       String
-  description String
-  status      TaskStatus  @default(PENDING)
-  priority    Priority    @default(MEDIUM)
-  dueDate     DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id            String        @id @default(cuid())
+  projectId     String?
+  project       Project?      @relation(fields: [projectId], references: [id])
+  milestone     String?       // Which milestone this task belongs to (milestone ID)
+  assignedTo    String
+  employee      Employee      @relation(fields: [assignedTo], references: [id])
+  title         String
+  description   String
+  status        TaskStatus    @default(PENDING)
+  priority      Priority      @default(MEDIUM)
+  dueDate       DateTime?
+  updates       TaskUpdate[]  // Developer updates/issues/requirements
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model TaskUpdate {
+  id          String    @id @default(cuid())
+  taskId      String
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  content     String    // Update content, issues, requirements
+  createdBy   String    // Employee ID
+  createdAt   DateTime  @default(now())
 }
 
 model Payroll {
-  id              String    @id @default(cuid())
-  employeeId      String
-  employee        Employee  @relation(fields: [employeeId], references: [id])
-  month           Int
-  year            Int
-  baseSalary      Float
-  grossSalary     Float
-  deductions      Float     @default(0)
-  pfDeduction     Float     @default(0)
-  esiDeduction    Float     @default(0)
-  taxDeduction    Float     @default(0)
-  netSalary       Float
-  daysPresent     Int       @default(0)
-  daysAbsent      Int       @default(0)
-  status          PayrollStatus @default(PENDING)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                String        @id @default(cuid())
+  employeeId        String
+  employee          Employee      @relation(fields: [employeeId], references: [id])
+  month             Int
+  year              Int
+  workingDays       Int           @default(30)
+  daysPresent       Int           @default(0)
+  daysAbsent        Int           @default(0)
+
+  // Salary Components
+  basicSalary       Float         // Basic pay component
+  variablePay       Float         @default(0) // Variable/incentive component
+
+  // Sales/Target (for sales department)
+  salesTarget       Float?        // Monthly sales target
+  targetAchieved    Float?        @default(0) // Actual target achieved
+
+  // Payable Amounts
+  basicPayable      Float         // Calculated based on attendance
+  variablePayable   Float         @default(0) // Calculated based on target achievement
+  grossSalary       Float         // Total payable before deductions
+
+  // Deductions
+  professionalTax   Float         @default(200) // P.tax
+  tds               Float         @default(0) // Tax Deducted at Source
+  penalties         Float         @default(0) // Any penalties
+  advancePayment    Float         @default(0) // Advance taken
+  otherDeductions   Float         @default(0) // Other deductions
+  totalDeductions   Float         @default(0) // Sum of all deductions
+
+  // Final Amount
+  netSalary         Float         // Final amount after deductions
+
+  status            PayrollStatus @default(PENDING)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@unique([employeeId, month, year])
 }
 
 model SalaryConfig {
@@ -164,16 +212,25 @@ model Invoice {
 }
 
 model Account {
-  id          String          @id @default(cuid())
-  type        AccountType
-  categoryId  String
-  category    AccountCategory @relation(fields: [categoryId], references: [id])
-  amount      Float
-  date        DateTime
-  description String?
-  reference   String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id              String          @id @default(cuid())
+  type            AccountType
+  categoryId      String
+  category        AccountCategory @relation(fields: [categoryId], references: [id])
+  amount          Float           // Always in INR
+  currency        String          @default("INR")
+  date            DateTime
+  description     String
+  reference       String?
+  // For incoming payments
+  paymentPurpose  String?
+  paymentMode     String?         // Bank Transfer, Cash, Cheque, etc
+  senderName      String?
+  bankInfo        String?
+  // For outgoing payments
+  paymentTo       String?         // Recipient name
+  paymentCategory String?         // Salary, Office Expense, etc
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 }
 
 model AccountCategory {
@@ -197,23 +254,54 @@ model Message {
   createdAt   DateTime    @default(now())
 }
 
+model SalesTarget {
+  id              String    @id @default(cuid())
+  employeeId      String    // Sales agent/executive
+  month           Int       // 1-12
+  year            Int
+  targetAmount    Float     // Target in USD
+  achievedAmount  Float     @default(0) // Achieved in USD
+  commission      Float     @default(0) // Commission earned
+  numberOfSales   Int       @default(0) // Number of sales made
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([employeeId, month, year])
+}
+
+model Report {
+  id          String      @id @default(cuid())
+  reportType  ReportType
+  month       Int?        // For monthly reports
+  year        Int?
+  data        Json        // Report data in JSON format
+  generatedBy String?     // Employee ID who generated
+  createdAt   DateTime    @default(now())
+}
+
 model Lead {
-  id            String          @id @default(cuid())
-  leadNumber    String          @unique
-  companyName   String
-  contactName   String
-  email         String
-  phone         String
-  source        String?         // Website, Referral, Cold Call, etc
-  status        CRMLeadStatus   @default(NEW)
-  assignedTo    String?
-  value         Float?          // Estimated deal value
-  notes         String?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  convertedAt   DateTime?
-  saleId        String?         @unique
-  sale          Sale?           @relation(fields: [saleId], references: [id])
+  id                  String          @id @default(cuid())
+  leadNumber          String          @unique
+  companyName         String
+  companyAddress      String?
+  contactName         String
+  email               String
+  phone               String
+  altPhone            String?
+  projectType         String?         // Services pitched for
+  estimatedValue      Float?          // Estimated deal value in USD
+  source              String?         // Website, Referral, Cold Call, etc
+  executiveName       String?         // Sales executive or agent name
+  communicationDetails String?        // Details of communication
+  status              CRMLeadStatus   @default(NEW)
+  callbackDateTime    DateTime?       // Call back or connect back date and time
+  assignedTo          String?
+  notes               String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  convertedAt         DateTime?
+  saleId              String?         @unique
+  sale                Sale?           @relation(fields: [saleId], references: [id])
 }
 
 model Sale {
@@ -228,16 +316,23 @@ model Sale {
   product         String
   quantity        Int         @default(1)
   unitPrice       Float
-  grossAmount     Float       // Total before discounts
+  grossAmount     Float       // Total sale amount in USD
+  upfrontAmount   Float       // Upfront payment received in USD
   discount        Float       @default(0)
   taxPercentage   Float       @default(0)
   taxAmount       Float       @default(0)
   netAmount       Float       // Final amount after discount + tax
+  currency        String      @default("USD")
   status          SaleStatus  @default(PENDING)
   closedBy        String?     // Employee ID who closed the sale
   closedAt        DateTime?
+  month           Int?        // Month of sale (1-12)
+  year            Int?        // Year of sale
+  commission      Float?      // Commission for sales agent
   notes           String?
   accountSynced   Boolean     @default(false) // Whether financial entry created
+  projectSynced   Boolean     @default(false) // Whether project created
+  projectId       String?     // Reference to created project
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 }
@@ -306,12 +401,27 @@ enum AccountType {
 
 enum CRMLeadStatus {
   NEW
-  CONTACTED
-  QUALIFIED
-  PROPOSAL
-  NEGOTIATION
+  COLD_CALL_BACK
+  WARM
+  PROSPECT
+  SALE_MADE
+  HOLD
+  DORMANT
   CONVERTED
   LOST
+}
+
+enum ProjectType {
+  MILESTONE
+  RETAINER
+}
+
+enum ReportType {
+  APR           // Attendance Performance Report
+  DSR           // Daily Sales Report
+  PERFORMANCE   // Employee Performance Report
+  SALES         // Sales Report
+  ACCOUNTS      // Account Report
 }
 
 enum SaleStatus {

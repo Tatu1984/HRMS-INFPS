@@ -187,11 +187,11 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, status } = body;
+    const { id, status, adminComment, leaveType, startDate, endDate, reason } = body;
 
-    if (!id || !status) {
+    if (!id) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Leave ID required' },
         { status: 400 }
       );
     }
@@ -236,9 +236,29 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    const updateData: any = {};
+
+    // Update status if provided
+    if (status) updateData.status = status;
+
+    // Update leave details if provided (admin/manager only)
+    if (session.role === 'ADMIN' || session.role === 'MANAGER') {
+      if (leaveType) updateData.leaveType = leaveType;
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        updateData.startDate = start;
+        updateData.endDate = end;
+        updateData.days = days;
+      }
+      if (reason) updateData.reason = reason;
+      if (adminComment !== undefined) updateData.adminComment = adminComment;
+    }
+
     const updatedLeave = await prisma.leave.update({
       where: { id },
-      data: { status },
+      data: updateData,
       include: {
         employee: {
           select: {

@@ -5,11 +5,12 @@ import { prisma } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Download, Trash2 } from 'lucide-react';
+import { Search, Download, Trash2, Eye } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import EmployeeFormDialog from '@/components/admin/employee-form-dialog';
 import DeleteEmployeeButton from '@/components/admin/delete-employee-button';
 import { UserCredentialsDialog } from '@/components/forms/user-credentials-dialog';
+import Link from 'next/link';
 
 export default async function EmployeesPage() {
   const employees = await prisma.employee.findMany({
@@ -25,6 +26,7 @@ export default async function EmployeesPage() {
           id: true,
           username: true,
           role: true,
+          permissions: true,
         },
       },
     },
@@ -72,6 +74,7 @@ export default async function EmployeesPage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Department</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Salary</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Login Access</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">View</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Actions</th>
                 </tr>
               </thead>
@@ -98,6 +101,13 @@ export default async function EmployeesPage() {
                       ) : (
                         <Badge variant="outline" className="text-gray-500">No Access</Badge>
                       )}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <Link href={`/admin/employees/${emp.id}`}>
+                        <Button size="sm" variant="outline" className="text-blue-600 hover:text-blue-700">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </Link>
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <div className="flex gap-2">

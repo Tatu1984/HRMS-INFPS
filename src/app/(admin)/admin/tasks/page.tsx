@@ -4,21 +4,25 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
 import { TaskDialog } from '@/components/forms/task-dialog';
+import { Folder, FolderOpen, ChevronRight, ChevronDown, Plus } from 'lucide-react';
+import { ProjectTasksAccordion } from '@/components/tasks/ProjectTasksAccordion';
 
 export default async function TasksPage() {
-  const tasks = await prisma.task.findMany({
+  // Get all projects with their tasks and milestones
+  const projects = await prisma.project.findMany({
     include: {
-      employee: {
-        select: {
-          id: true,
-          name: true,
-          employeeId: true,
+      tasks: {
+        include: {
+          employee: {
+            select: {
+              id: true,
+              name: true,
+              employeeId: true,
+            },
+          },
         },
-      },
-      project: {
-        select: {
-          id: true,
-          name: true,
+        orderBy: {
+          createdAt: 'desc',
         },
       },
     },
@@ -34,73 +38,32 @@ export default async function TasksPage() {
     },
   });
 
-  const projects = await prisma.project.findMany({
-    select: {
-      id: true,
-      name: true,
-    },
-  });
-
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Tasks</h1>
-          <p className="text-gray-600">Manage and assign tasks to team members</p>
+          <p className="text-gray-600">Organize tasks by projects and milestones</p>
         </div>
-        <TaskDialog employees={employees} projects={projects} />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Tasks</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Task</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Project</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Assigned To</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Priority</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Due Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {tasks.map((task) => {
-                  return (
-                    <tr key={task.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium">{task.title}</td>
-                      <td className="px-4 py-3 text-sm">{task.project?.name || 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm">{task.employee?.name || 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm">
-                        <Badge variant={
-                          task.priority === 'URGENT' ? 'destructive' :
-                          task.priority === 'HIGH' ? 'default' : 'secondary'
-                        }>
-                          {task.priority}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        <Badge variant={task.status === 'COMPLETED' ? 'default' : 'secondary'}>
-                          {task.status}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-sm">{task.dueDate ? formatDate(task.dueDate) : 'No deadline'}</td>
-                      <td className="px-4 py-3 text-sm">
-                        <Button variant="outline" size="sm">Edit</Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        {projects.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center text-gray-500">
+              No projects found. Create a project first to add tasks.
+            </CardContent>
+          </Card>
+        ) : (
+          projects.map((project) => (
+            <ProjectTasksAccordion
+              key={project.id}
+              project={project}
+              employees={employees}
+            />
+          ))
+        )}
+      </div>
     </div>
   );
 }

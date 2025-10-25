@@ -56,9 +56,22 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { type, categoryId, amount, date, description, reference } = body;
+    const {
+      type,
+      categoryId,
+      amount,
+      date,
+      description,
+      reference,
+      paymentPurpose,
+      paymentMode,
+      senderName,
+      bankInfo,
+      paymentTo,
+      paymentCategory
+    } = body;
 
-    if (!type || !categoryId || !amount || !date) {
+    if (!type || !categoryId || !amount || !date || !description) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -67,9 +80,16 @@ export async function POST(request: NextRequest) {
         type,
         categoryId,
         amount: parseFloat(amount),
+        currency: 'INR',
         date: new Date(date),
-        description: description || '',
+        description,
         reference: reference || null,
+        paymentPurpose: paymentPurpose || null,
+        paymentMode: paymentMode || null,
+        senderName: senderName || null,
+        bankInfo: bankInfo || null,
+        paymentTo: paymentTo || null,
+        paymentCategory: paymentCategory || null,
       },
       include: {
         category: {

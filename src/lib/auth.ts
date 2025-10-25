@@ -10,6 +10,7 @@ export interface JWTPayload {
   role: 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
   employeeId?: string;
   name: string;
+  permissions?: any;
 }
 
 export async function encrypt(payload: JWTPayload): Promise<string> {
@@ -29,15 +30,15 @@ export async function decrypt(token: string): Promise<JWTPayload | null> {
       typeof payload.userId === 'string' &&
       typeof payload.email === 'string' &&
       (payload.role === 'ADMIN' || payload.role === 'MANAGER' || payload.role === 'EMPLOYEE') &&
-      typeof payload.employeeId === 'string' &&
       typeof payload.name === 'string'
     ) {
       return {
         userId: payload.userId,
         email: payload.email,
         role: payload.role,
-        employeeId: payload.employeeId,
+        employeeId: typeof payload.employeeId === 'string' ? payload.employeeId : undefined,
         name: payload.name,
+        permissions: payload.permissions || null,
       };
     }
 

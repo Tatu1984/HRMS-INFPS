@@ -25,6 +25,14 @@ export function AccountEntryDialog({ categories }: AccountEntryDialogProps) {
     date: new Date().toISOString().split('T')[0],
     description: '',
     reference: '',
+    // For incoming payments
+    paymentPurpose: '',
+    paymentMode: '',
+    senderName: '',
+    bankInfo: '',
+    // For outgoing payments
+    paymentTo: '',
+    paymentCategory: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,6 +55,12 @@ export function AccountEntryDialog({ categories }: AccountEntryDialogProps) {
           date: new Date().toISOString().split('T')[0],
           description: '',
           reference: '',
+          paymentPurpose: '',
+          paymentMode: '',
+          senderName: '',
+          bankInfo: '',
+          paymentTo: '',
+          paymentCategory: '',
         });
         router.refresh();
       } else {
@@ -109,13 +123,14 @@ export function AccountEntryDialog({ categories }: AccountEntryDialogProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount *</Label>
+              <Label htmlFor="amount">Amount (INR) *</Label>
               <Input
                 id="amount"
                 type="number"
                 step="0.01"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                placeholder="Amount in INR"
                 required
               />
             </div>
@@ -132,22 +147,107 @@ export function AccountEntryDialog({ categories }: AccountEntryDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Description *</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={2}
+              required
+              placeholder="Details about this transaction"
             />
           </div>
 
+          {formData.type === 'INCOME' && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="paymentPurpose">Purpose of Payment</Label>
+                  <Input
+                    id="paymentPurpose"
+                    value={formData.paymentPurpose}
+                    onChange={(e) => setFormData({ ...formData, paymentPurpose: e.target.value })}
+                    placeholder="e.g., Project payment, Service fee"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="paymentMode">Payment Mode</Label>
+                  <Select value={formData.paymentMode} onValueChange={(value) => setFormData({ ...formData, paymentMode: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select mode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                      <SelectItem value="Cash">Cash</SelectItem>
+                      <SelectItem value="Cheque">Cheque</SelectItem>
+                      <SelectItem value="UPI">UPI</SelectItem>
+                      <SelectItem value="Credit Card">Credit Card</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="senderName">Sender Name</Label>
+                  <Input
+                    id="senderName"
+                    value={formData.senderName}
+                    onChange={(e) => setFormData({ ...formData, senderName: e.target.value })}
+                    placeholder="Name of payer"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bankInfo">Bank Information</Label>
+                  <Input
+                    id="bankInfo"
+                    value={formData.bankInfo}
+                    onChange={(e) => setFormData({ ...formData, bankInfo: e.target.value })}
+                    placeholder="Bank name, account details"
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {formData.type === 'EXPENSE' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="paymentTo">Payment To</Label>
+                <Input
+                  id="paymentTo"
+                  value={formData.paymentTo}
+                  onChange={(e) => setFormData({ ...formData, paymentTo: e.target.value })}
+                  placeholder="Recipient name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="paymentCategory">Payment Category</Label>
+                <Select value={formData.paymentCategory} onValueChange={(value) => setFormData({ ...formData, paymentCategory: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Salary">Salary</SelectItem>
+                    <SelectItem value="Office Expense">Office Expense</SelectItem>
+                    <SelectItem value="Rent">Rent</SelectItem>
+                    <SelectItem value="Utilities">Utilities</SelectItem>
+                    <SelectItem value="Equipment">Equipment</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
-            <Label htmlFor="reference">Reference</Label>
+            <Label htmlFor="reference">Reference Number</Label>
             <Input
               id="reference"
               value={formData.reference}
               onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
-              placeholder="e.g., Invoice #, Receipt #"
+              placeholder="e.g., Invoice #, Receipt #, Transaction ID"
             />
           </div>
 

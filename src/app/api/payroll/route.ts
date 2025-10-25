@@ -82,15 +82,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Month and year required' }, { status: 400 });
     }
 
-    // Get salary config
-    const config = await prisma.salaryConfig.findFirst({
-      orderBy: { createdAt: 'desc' },
-    });
-
-    const pfPercentage = config?.pfPercentage || 12;
-    const esiPercentage = config?.esiPercentage || 0.75;
-    const taxPercentage = config?.taxPercentage || 10;
-
     // Get employees to process
     const where: any = {};
     if (employeeIds && employeeIds.length > 0) {
@@ -132,19 +123,40 @@ export async function POST(request: NextRequest) {
       const presentDays = attendance.filter(a => a.status === 'PRESENT').length;
       const halfDays = attendance.filter(a => a.status === 'HALF_DAY').length;
       const totalWorkingDays = endDate.getDate();
-
-      // Calculate salary
-      const baseSalary = emp.salary;
-      const perDaySalary = baseSalary / totalWorkingDays;
       const effectiveDays = presentDays + (halfDays * 0.5);
-      const grossSalary = perDaySalary * effectiveDays;
+      const absentDays = totalWorkingDays - effectiveDays;
 
-      // Calculate deductions
-      const pfDeduction = (baseSalary * pfPercentage) / 100;
-      const esiDeduction = (baseSalary * esiPercentage) / 100;
-      const taxDeduction = (grossSalary * taxPercentage) / 100;
-      const totalDeductions = pfDeduction + esiDeduction + taxDeduction;
+      // Salary components from employee record - department specific
+      // Only Sales department gets 70% basic + 30% variable structure
+      const isSales = emp.department === 'Sales' || emp.employeeType === 'Sales';
+      const basicSalary = emp.basicSalary || (isSales ? emp.salary * 0.7 : emp.salary);
+      const variablePay = emp.variablePay || (isSales ? emp.salary * 0.3 : 0);
+      const salesTarget = emp.salesTarget || 0;
 
+      // Calculate Basic Payable (attendance-based)
+      const perDayBasic = basicSalary / totalWorkingDays;
+      const basicPayable = perDayBasic * effectiveDays;
+
+      // Calculate Variable Payable (target achievement-based)
+      // For now, if employee has target, calculate based on % achievement
+      // This can be enhanced with actual sales data
+      const targetAchieved = 0; // Will be input by admin or fetched from sales
+      const targetAchievementPercent = salesTarget > 0 ? (targetAchieved / salesTarget) * 100 : 0;
+      const variablePayable = isSales ? (variablePay * targetAchievementPercent) / 100 : 0;
+
+      // Gross Salary
+      const grossSalary = basicPayable + variablePayable;
+
+      // Deductions
+      const professionalTax = 200; // Fixed P.tax
+      const tds = grossSalary * 0.1; // 10% TDS
+      const penalties = 0; // Will be input by admin
+      const advancePayment = 0; // Will be input by admin
+      const otherDeductions = 0;
+
+      const totalDeductions = professionalTax + tds + penalties + advancePayment + otherDeductions;
+
+      // Net Salary
       const netSalary = grossSalary - totalDeductions;
 
       const payrollRecord = await prisma.payroll.create({
@@ -152,15 +164,27 @@ export async function POST(request: NextRequest) {
           employeeId: emp.id,
           month: parseInt(month),
           year: parseInt(year),
-          baseSalary,
-          grossSalary,
-          deductions: totalDeductions,
-          netSalary,
-          pfDeduction,
-          esiDeduction,
-          taxDeduction,
+          workingDays: totalWorkingDays,
           daysPresent: presentDays,
-          daysAbsent: totalWorkingDays - effectiveDays,
+          daysAbsent: absentDays,
+
+          basicSalary,
+          variablePay,
+          salesTarget,
+          targetAchieved,
+
+          basicPayable,
+          variablePayable,
+          grossSalary,
+
+          professionalTax,
+          tds,
+          penalties,
+          advancePayment,
+          otherDeductions,
+          totalDeductions,
+
+          netSalary,
           status: 'PENDING',
         },
         include: {
@@ -170,6 +194,8 @@ export async function POST(request: NextRequest) {
               employeeId: true,
               name: true,
               designation: true,
+              department: true,
+              employeeType: true,
             },
           },
         },

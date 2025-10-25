@@ -74,22 +74,70 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, description, startDate, endDate, status, memberIds, milestones, successCriteria } = body;
+    const {
+      name,
+      description,
+      startDate,
+      endDate,
+      status,
+      memberIds,
+      milestones,
+      successCriteria,
+      projectType,
+      totalBudget,
+      upfrontPayment,
+      leadId,
+      saleId
+    } = body;
 
     if (!name || !description || !startDate) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Generate Project ID
+    const lastProject = await prisma.project.findFirst({
+      orderBy: { createdAt: 'desc' },
+      select: { projectId: true },
+    });
+
+    let projectNumber = 1;
+    if (lastProject && lastProject.projectId) {
+      const match = lastProject.projectId.match(/PRJ(\d+)/);
+      if (match) {
+        projectNumber = parseInt(match[1]) + 1;
+      }
+    }
+
+    const projectId = `PRJ${projectNumber.toString().padStart(5, '0')}`;
+
+    // Format milestones for storage
+    const milestonesData = milestones && milestones.length > 0 ? {
+      milestones: milestones.map((m: any, idx: number) => ({
+        id: `milestone-${idx + 1}`,
+        name: m.name,
+        successCriteria: m.successCriteria,
+        payment: parseFloat(m.payment) || 0,
+        dueDate: m.dueDate,
+        status: 'pending'
+      }))
+    } : null;
+
     // Create project with members
     const project = await prisma.project.create({
       data: {
+        projectId,
         name,
         description,
         startDate: new Date(startDate),
         endDate: endDate ? new Date(endDate) : null,
         status: status || 'ACTIVE',
-        milestones: milestones || [],
+        projectType: projectType || 'MILESTONE',
+        totalBudget: totalBudget || 0,
+        upfrontPayment: upfrontPayment || 0,
+        milestones: milestonesData,
         successCriteria: successCriteria || '',
+        leadId: leadId || null,
+        saleId: saleId || null,
         members: {
           create: (memberIds || []).map((employeeId: string) => ({
             employeeId,

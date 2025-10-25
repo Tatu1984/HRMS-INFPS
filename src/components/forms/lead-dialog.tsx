@@ -29,11 +29,18 @@ export function LeadDialog() {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     companyName: '',
+    companyAddress: '',
     contactName: '',
     email: '',
     phone: '',
+    altPhone: '',
+    projectType: '',
+    estimatedValue: '',
     source: '',
-    value: '',
+    executiveName: '',
+    communicationDetails: '',
+    status: 'NEW',
+    callbackDateTime: '',
     assignedTo: '',
     notes: '',
   });
@@ -53,11 +60,18 @@ export function LeadDialog() {
         setOpen(false);
         setFormData({
           companyName: '',
+          companyAddress: '',
           contactName: '',
           email: '',
           phone: '',
+          altPhone: '',
+          projectType: '',
+          estimatedValue: '',
           source: '',
-          value: '',
+          executiveName: '',
+          communicationDetails: '',
+          status: 'NEW',
+          callbackDateTime: '',
           assignedTo: '',
           notes: '',
         });
@@ -82,7 +96,7 @@ export function LeadDialog() {
           Add New Lead
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Lead</DialogTitle>
           <DialogDescription>
@@ -101,7 +115,18 @@ export function LeadDialog() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="contactName">Contact Name *</Label>
+              <Label htmlFor="companyAddress">Company Address</Label>
+              <Input
+                id="companyAddress"
+                value={formData.companyAddress}
+                onChange={(e) => setFormData({ ...formData, companyAddress: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="contactName">Contact Person Name *</Label>
               <Input
                 id="contactName"
                 value={formData.contactName}
@@ -109,9 +134,6 @@ export function LeadDialog() {
                 required
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email *</Label>
               <Input
@@ -122,13 +144,47 @@ export function LeadDialog() {
                 required
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone *</Label>
+              <Label htmlFor="phone">Phone Number *</Label>
               <Input
                 id="phone"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="altPhone">Alternate Number</Label>
+              <Input
+                id="altPhone"
+                value={formData.altPhone}
+                onChange={(e) => setFormData({ ...formData, altPhone: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="projectType">Project Type (Services Pitched For)</Label>
+              <Input
+                id="projectType"
+                value={formData.projectType}
+                onChange={(e) => setFormData({ ...formData, projectType: e.target.value })}
+                placeholder="e.g., Web Development, Mobile App, etc."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="estimatedValue">Estimated Value (USD)</Label>
+              <Input
+                id="estimatedValue"
+                type="number"
+                step="0.01"
+                value={formData.estimatedValue}
+                onChange={(e) => setFormData({ ...formData, estimatedValue: e.target.value })}
+                placeholder="0.00"
               />
             </div>
           </div>
@@ -152,14 +208,51 @@ export function LeadDialog() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="value">Estimated Value</Label>
+              <Label htmlFor="executiveName">Executive/Agent Name</Label>
               <Input
-                id="value"
-                type="number"
-                step="0.01"
-                value={formData.value}
-                onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                placeholder="0.00"
+                id="executiveName"
+                value={formData.executiveName}
+                onChange={(e) => setFormData({ ...formData, executiveName: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="communicationDetails">Details of Communication</Label>
+            <Textarea
+              id="communicationDetails"
+              value={formData.communicationDetails}
+              onChange={(e) => setFormData({ ...formData, communicationDetails: e.target.value })}
+              rows={3}
+              placeholder="Details of interactions with the lead..."
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="status">Lead Status</Label>
+              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NEW">New</SelectItem>
+                  <SelectItem value="COLD_CALL_BACK">Cold Call Back</SelectItem>
+                  <SelectItem value="WARM">Warm</SelectItem>
+                  <SelectItem value="PROSPECT">Prospect</SelectItem>
+                  <SelectItem value="SALE_MADE">Sale Made</SelectItem>
+                  <SelectItem value="HOLD">Hold</SelectItem>
+                  <SelectItem value="DORMANT">Dormant</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="callbackDateTime">Call Back / Connect Back Date & Time</Label>
+              <Input
+                id="callbackDateTime"
+                type="datetime-local"
+                value={formData.callbackDateTime}
+                onChange={(e) => setFormData({ ...formData, callbackDateTime: e.target.value })}
               />
             </div>
           </div>
@@ -170,8 +263,8 @@ export function LeadDialog() {
               id="notes"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              rows={3}
-              placeholder="Additional information about the lead..."
+              rows={2}
+              placeholder="Additional notes..."
             />
           </div>
 

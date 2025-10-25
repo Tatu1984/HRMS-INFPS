@@ -7,9 +7,44 @@ const adminPaths = ['/admin'];
 const managerPaths = ['/manager'];
 const employeePaths = ['/employee'];
 
+// Map URL paths to permission keys
+const pathToPermissionMap: Record<string, string> = {
+  '/dashboard': 'dashboard',
+  '/employees': 'employees',
+  '/attendance': 'attendance',
+  '/leaves': 'leaves',
+  '/projects': 'projects',
+  '/tasks': 'tasks',
+  '/payroll': 'payroll',
+  '/accounts': 'accounts',
+  '/invoices': 'invoices',
+  '/reports': 'reports',
+  '/leads': 'leads',
+  '/sales': 'sales',
+  '/messages': 'messages',
+  '/settings': 'settings',
+};
+
+function checkSectionPermission(pathname: string, permissions: any): boolean {
+  // Admin role has access to everything
+  if (!permissions) {
+    return true; // If no permissions set, allow access (backward compatibility)
+  }
+
+  // Find the section from the pathname
+  for (const [path, permissionKey] of Object.entries(pathToPermissionMap)) {
+    if (pathname.includes(path)) {
+      return permissions[permissionKey] === true;
+    }
+  }
+
+  // Allow dashboard by default
+  return true;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
   if (publicPaths.some(path => pathname.startsWith(path))) {
     return NextResponse.next();
   }
@@ -28,6 +63,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
+  // Check role-based access
   if (adminPaths.some(path => pathname.startsWith(path)) && session.role !== 'ADMIN') {
     return NextResponse.redirect(new URL(`/${session.role.toLowerCase()}/dashboard`, request.url));
   }
@@ -38,6 +74,15 @@ export async function middleware(request: NextRequest) {
 
   if (employeePaths.some(path => pathname.startsWith(path)) && session.role !== 'EMPLOYEE') {
     return NextResponse.redirect(new URL(`/${session.role.toLowerCase()}/dashboard`, request.url));
+  }
+
+  // Check section-level permissions (except for admins who have full access)
+  if (session.role !== 'ADMIN' && session.permissions) {
+    const hasPermission = checkSectionPermission(pathname, session.permissions);
+    if (!hasPermission) {
+      // Redirect to dashboard if no permission
+      return NextResponse.redirect(new URL(`/${session.role.toLowerCase()}/dashboard`, request.url));
+    }
   }
 
   return NextResponse.next();

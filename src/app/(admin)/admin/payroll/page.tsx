@@ -72,10 +72,11 @@ export default async function PayrollPage() {
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Employee</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Period</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">Base Salary</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">Allowances</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">Deductions</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600">Days</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">Basic</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">Variable</th>
                     <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">Gross</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">Deductions</th>
                     <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600">Net Salary</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">Status</th>
                   </tr>
@@ -92,11 +93,17 @@ export default async function PayrollPage() {
                       <td className="px-4 py-3 text-sm">
                         {getMonthName(payroll.month)} {payroll.year}
                       </td>
-                      <td className="px-4 py-3 text-sm text-right">{formatCurrency(payroll.baseSalary)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-green-600">{formatCurrency(payroll.allowances)}</td>
-                      <td className="px-4 py-3 text-sm text-right text-red-600">{formatCurrency(payroll.deductions)}</td>
+                      <td className="px-4 py-3 text-sm text-center">
+                        <div className="text-xs">
+                          <div className="text-green-600 font-semibold">{payroll.daysPresent}P</div>
+                          <div className="text-red-600">{payroll.daysAbsent}A</div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right">{formatCurrency(payroll.basicPayable)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-green-600">{formatCurrency(payroll.variablePayable)}</td>
                       <td className="px-4 py-3 text-sm text-right font-semibold">{formatCurrency(payroll.grossSalary)}</td>
-                      <td className="px-4 py-3 text-sm text-right font-bold text-green-600">{formatCurrency(payroll.netSalary)}</td>
+                      <td className="px-4 py-3 text-sm text-right text-red-600">{formatCurrency(payroll.totalDeductions)}</td>
+                      <td className="px-4 py-3 text-sm text-right font-bold text-blue-600">{formatCurrency(payroll.netSalary)}</td>
                       <td className="px-4 py-3 text-sm">
                         <Badge className={getStatusColor(payroll.status)}>
                           {payroll.status}

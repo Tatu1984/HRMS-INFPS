@@ -160,24 +160,31 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Calculate total hours
+      // Calculate total hours and break duration
       const punchInTime = attendance.punchIn ? new Date(attendance.punchIn).getTime() : 0;
       const punchOutTime = now.getTime();
       let totalHours = (punchOutTime - punchInTime) / (1000 * 60 * 60);
 
-      // Subtract break time if any
+      let breakDuration = 0;
+      // Calculate break time if any
       if (attendance.breakStart && attendance.breakEnd) {
         const breakStartTime = new Date(attendance.breakStart).getTime();
         const breakEndTime = new Date(attendance.breakEnd).getTime();
-        const breakHours = (breakEndTime - breakStartTime) / (1000 * 60 * 60);
-        totalHours -= breakHours;
+        breakDuration = (breakEndTime - breakStartTime) / (1000 * 60 * 60);
+        totalHours -= breakDuration;
       }
+
+      // Note: Idle time tracking requires client-side activity monitoring
+      // For now, we'll set it to 0 and can be updated separately via PUT request
+      const idleTime = 0;
 
       attendance = await prisma.attendance.update({
         where: { id: attendance.id },
         data: {
           punchOut: now,
           totalHours: Math.round(totalHours * 100) / 100, // Round to 2 decimal places
+          breakDuration: Math.round(breakDuration * 100) / 100,
+          idleTime: Math.round(idleTime * 100) / 100,
           status: totalHours >= 4 ? 'PRESENT' : 'HALF_DAY',
         },
         include: {

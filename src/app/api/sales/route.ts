@@ -60,13 +60,16 @@ export async function POST(request: NextRequest) {
       product,
       quantity,
       unitPrice,
+      upfrontAmount,
       discount,
       taxPercentage,
+      closedBy,
       notes,
-      createAccountEntry
+      createAccountEntry,
+      createProject
     } = body;
 
-    if (!companyName || !contactName || !email || !phone || !product || !unitPrice) {
+    if (!companyName || !contactName || !email || !phone || !product || !unitPrice || !upfrontAmount) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -93,6 +96,11 @@ export async function POST(request: NextRequest) {
     const taxAmount = (amountAfterDiscount * taxPercent) / 100;
     const netAmount = amountAfterDiscount + taxAmount;
 
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1; // 1-12
+    const currentYear = now.getFullYear();
+    const upfront = parseFloat(upfrontAmount) || 0;
+
     // Start transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create sale
@@ -108,15 +116,20 @@ export async function POST(request: NextRequest) {
           quantity: qty,
           unitPrice: price,
           grossAmount,
+          upfrontAmount: upfront,
           discount: discountAmount,
           taxPercentage: taxPercent,
           taxAmount,
           netAmount,
+          currency: 'USD',
           status: 'PENDING',
-          closedBy: session.employeeId || null,
-          closedAt: new Date(),
+          closedBy: closedBy || session.employeeId || null,
+          closedAt: now,
+          month: currentMonth,
+          year: currentYear,
           notes: notes || null,
           accountSynced: false,
+          projectSynced: false,
         },
       });
 
@@ -128,6 +141,62 @@ export async function POST(request: NextRequest) {
             status: 'CONVERTED',
             convertedAt: new Date(),
             saleId: sale.id,
+          },
+        });
+      }
+
+      // Create project if requested
+      if (createProject) {
+        // Generate Project ID
+        const lastProject = await tx.project.findFirst({
+          orderBy: { createdAt: 'desc' },
+          select: { projectId: true },
+        });
+
+        let projectNumber = 1;
+        if (lastProject && lastProject.projectId) {
+          const match = lastProject.projectId.match(/PRJ(\d+)/);
+          if (match) {
+            projectNumber = parseInt(match[1]) + 1;
+          }
+        }
+
+        const projectId = `PRJ${projectNumber.toString().padStart(5, '0')}`;
+
+        // Format milestones if provided
+        const milestonesData = body.milestones && body.milestones.length > 0 ? {
+          milestones: body.milestones.map((m: any, idx: number) => ({
+            id: `milestone-${idx + 1}`,
+            name: m.name,
+            successCriteria: m.successCriteria,
+            payment: parseFloat(m.payment) || 0,
+            status: 'pending'
+          }))
+        } : null;
+
+        const project = await tx.project.create({
+          data: {
+            projectId,
+            name: `${companyName} - ${product}`,
+            description: notes || `Project from sale ${saleNumber}`,
+            projectType: body.projectType || 'MILESTONE',
+            totalBudget: parseFloat(body.totalBudget) || netAmount,
+            upfrontPayment: upfront,
+            startDate: now,
+            status: 'ACTIVE',
+            currency: 'INR',
+            milestones: milestonesData,
+            leadId: leadId || null,
+            saleId: sale.id,
+          },
+        });
+
+        // Mark sale as synced with project
+        await tx.sale.update({
+          where: { id: sale.id },
+          data: {
+            projectSynced: true,
+            projectId: project.id,
           },
         });
       }
