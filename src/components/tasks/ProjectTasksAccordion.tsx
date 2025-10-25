@@ -143,12 +143,12 @@ export function ProjectTasksAccordion({ project, employees }: ProjectTasksAccord
           {/* Milestone-based tasks */}
           {project.projectType === 'MILESTONE' && milestones.length > 0 && (
             <div className="space-y-3">
-              {milestones.map((milestone: any) => {
+              {milestones.map((milestone: any, index: number) => {
                 const milestoneTasks = tasksByMilestone[milestone.id] || [];
                 const isExpanded = expandedMilestones.has(milestone.id);
 
                 return (
-                  <div key={milestone.id} className="border rounded-lg bg-gray-50">
+                  <div key={`${project.id}-milestone-${milestone.id || index}`} className="border rounded-lg bg-gray-50">
                     <div
                       className="p-3 cursor-pointer hover:bg-gray-100 transition-colors"
                       onClick={() => toggleMilestone(milestone.id)}

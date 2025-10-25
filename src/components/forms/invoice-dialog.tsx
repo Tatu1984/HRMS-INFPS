@@ -24,8 +24,14 @@ export function InvoiceDialog() {
     invoiceNumber: '',
     clientName: '',
     clientEmail: '',
-    currency: 'INR',
+    clientAddress: '',
+    clientCity: '',
+    clientCountry: '',
+    placeOfSupply: '',
+    currency: 'USD',
+    invoiceDate: new Date().toISOString().split('T')[0],
     dueDate: '',
+    paymentTerms: 'Immediate',
     notes: '',
   });
 
@@ -89,8 +95,14 @@ export function InvoiceDialog() {
           invoiceNumber: '',
           clientName: '',
           clientEmail: '',
-          currency: 'INR',
+          clientAddress: '',
+          clientCity: '',
+          clientCountry: '',
+          placeOfSupply: '',
+          currency: 'USD',
+          invoiceDate: new Date().toISOString().split('T')[0],
           dueDate: '',
+          paymentTerms: 'Immediate',
           notes: '',
         });
         setItems([{ description: '', quantity: 1, rate: 0, amount: 0 }]);
@@ -120,47 +132,131 @@ export function InvoiceDialog() {
           <DialogTitle>Generate New Invoice</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Client & Invoice Details */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Invoice Details */}
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="invoiceNumber">Invoice Number *</Label>
               <Input
                 id="invoiceNumber"
                 value={formData.invoiceNumber}
                 onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
-                placeholder="INV-001"
+                placeholder="SDP-INV-25-0001"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="clientName">Client Name *</Label>
+              <Label htmlFor="invoiceDate">Invoice Date *</Label>
               <Input
-                id="clientName"
-                value={formData.clientName}
-                onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
+                id="invoiceDate"
+                type="date"
+                value={formData.invoiceDate}
+                onChange={(e) => setFormData({ ...formData, invoiceDate: e.target.value })}
                 required
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="clientEmail">Client Email</Label>
-              <Input
-                id="clientEmail"
-                type="email"
-                value={formData.clientEmail}
-                onChange={(e) => setFormData({ ...formData, clientEmail: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="dueDate">Due Date</Label>
+              <Label htmlFor="dueDate">Due Date *</Label>
               <Input
                 id="dueDate"
                 type="date"
                 value={formData.dueDate}
                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                required
               />
+            </div>
+          </div>
+
+          {/* Client Details */}
+          <div className="space-y-4 border p-4 rounded-lg bg-gray-50">
+            <h3 className="font-semibold">Bill To:</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="clientName">Company/Client Name *</Label>
+                <Input
+                  id="clientName"
+                  value={formData.clientName}
+                  onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
+                  placeholder="Ten Sparrow"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="clientEmail">Client Email</Label>
+                <Input
+                  id="clientEmail"
+                  type="email"
+                  value={formData.clientEmail}
+                  onChange={(e) => setFormData({ ...formData, clientEmail: e.target.value })}
+                  placeholder="client@example.com"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="clientCity">City/State</Label>
+                <Input
+                  id="clientCity"
+                  value={formData.clientCity}
+                  onChange={(e) => setFormData({ ...formData, clientCity: e.target.value })}
+                  placeholder="Georgia Atlanta"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="clientCountry">Country *</Label>
+                <Input
+                  id="clientCountry"
+                  value={formData.clientCountry}
+                  onChange={(e) => setFormData({ ...formData, clientCountry: e.target.value })}
+                  placeholder="United States"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="placeOfSupply">Place of Supply</Label>
+                <Input
+                  id="placeOfSupply"
+                  value={formData.placeOfSupply}
+                  onChange={(e) => setFormData({ ...formData, placeOfSupply: e.target.value })}
+                  placeholder="Other country(96)"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="clientAddress">Address</Label>
+              <Input
+                id="clientAddress"
+                value={formData.clientAddress}
+                onChange={(e) => setFormData({ ...formData, clientAddress: e.target.value })}
+                placeholder="Full address"
+              />
+            </div>
+          </div>
+
+          {/* Payment Terms & Currency */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="paymentTerms">Payment Terms</Label>
+              <Input
+                id="paymentTerms"
+                value={formData.paymentTerms}
+                onChange={(e) => setFormData({ ...formData, paymentTerms: e.target.value })}
+                placeholder="Immediate / Net 30 / etc."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="currency">Currency *</Label>
+              <select
+                id="currency"
+                value={formData.currency}
+                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                className="w-full h-10 px-3 border rounded-md"
+                required
+              >
+                <option value="USD">USD - US Dollar</option>
+                <option value="INR">INR - Indian Rupee</option>
+                <option value="EUR">EUR - Euro</option>
+                <option value="GBP">GBP - British Pound</option>
+              </select>
             </div>
           </div>
 

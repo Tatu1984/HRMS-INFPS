@@ -41,6 +41,16 @@ model Employee {
   dateOfJoining     DateTime
   profilePicture    String?
   documents         Json?
+  // KYC Documents
+  aadharNumber      String?
+  panNumber         String?
+  aadharDocument    String?    // File path or URL for Aadhar document
+  panDocument       String?    // File path or URL for PAN document
+  // Bank Details
+  bankName          String?
+  bankAddress       String?
+  accountNumber     String?
+  ifscCode          String?
   user              User?
   attendance        Attendance[]
   leaves            Leave[]

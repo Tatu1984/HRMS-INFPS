@@ -54,10 +54,12 @@ export function LeadsClient({ leads, userRole }: LeadsClientProps) {
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       NEW: 'bg-blue-100 text-blue-700',
-      CONTACTED: 'bg-indigo-100 text-indigo-700',
-      QUALIFIED: 'bg-cyan-100 text-cyan-700',
-      PROPOSAL: 'bg-yellow-100 text-yellow-700',
-      NEGOTIATION: 'bg-orange-100 text-orange-700',
+      COLD_CALL_BACK: 'bg-sky-100 text-sky-700',
+      WARM: 'bg-amber-100 text-amber-700',
+      PROSPECT: 'bg-yellow-100 text-yellow-700',
+      SALE_MADE: 'bg-emerald-100 text-emerald-700',
+      HOLD: 'bg-orange-100 text-orange-700',
+      DORMANT: 'bg-slate-100 text-slate-700',
       CONVERTED: 'bg-green-100 text-green-700',
       LOST: 'bg-red-100 text-red-700',
     };
@@ -167,12 +169,14 @@ export function LeadsClient({ leads, userRole }: LeadsClientProps) {
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="NEW">NEW</SelectItem>
-                        <SelectItem value="CONTACTED">CONTACTED</SelectItem>
-                        <SelectItem value="QUALIFIED">QUALIFIED</SelectItem>
-                        <SelectItem value="PROPOSAL">PROPOSAL</SelectItem>
-                        <SelectItem value="NEGOTIATION">NEGOTIATION</SelectItem>
-                        <SelectItem value="LOST">LOST</SelectItem>
+                        <SelectItem value="NEW">New</SelectItem>
+                        <SelectItem value="COLD_CALL_BACK">Cold Call Back</SelectItem>
+                        <SelectItem value="WARM">Warm</SelectItem>
+                        <SelectItem value="PROSPECT">Prospect</SelectItem>
+                        <SelectItem value="SALE_MADE">Sale Made</SelectItem>
+                        <SelectItem value="HOLD">Hold</SelectItem>
+                        <SelectItem value="DORMANT">Dormant</SelectItem>
+                        <SelectItem value="LOST">Lost</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
