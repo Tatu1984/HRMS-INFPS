@@ -79,24 +79,47 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { recipientId, subject, content, tracked } = body;
 
-    if (!recipientId || !subject || !content) {
+    if (!recipientId || !content) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Verify recipient exists
-    const recipient = await prisma.employee.findUnique({
-      where: { id: recipientId },
+    // Get current user's employee record
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.id },
+      include: { employee: true },
     });
 
-    if (!recipient) {
-      return NextResponse.json({ error: 'Recipient not found' }, { status: 404 });
+    if (!currentUser?.employee) {
+      return NextResponse.json({ error: 'Employee record not found' }, { status: 404 });
+    }
+
+    // Check if recipientId is a user ID or employee ID
+    let recipientEmployeeId = recipientId;
+
+    // Try to find as user ID first (for popup messenger)
+    const recipientUser = await prisma.user.findUnique({
+      where: { id: recipientId },
+      include: { employee: true },
+    });
+
+    if (recipientUser?.employee) {
+      recipientEmployeeId = recipientUser.employee.id;
+    } else {
+      // Verify it's a valid employee ID
+      const recipient = await prisma.employee.findUnique({
+        where: { id: recipientId },
+      });
+
+      if (!recipient) {
+        return NextResponse.json({ error: 'Recipient not found' }, { status: 404 });
+      }
     }
 
     const message = await prisma.message.create({
       data: {
-        senderId: session.employeeId!,
-        recipientId,
-        subject,
+        senderId: currentUser.employee.id,
+        recipientId: recipientEmployeeId,
+        subject: subject || '',
         content,
         tracked: tracked || false,
         read: false,
@@ -119,7 +142,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, message }, { status: 201 });
+    // Return with user ID as senderId for popup messenger
+    return NextResponse.json({
+      id: message.id,
+      senderId: session.id,
+      content: message.content,
+      createdAt: message.createdAt,
+      read: message.read,
+    }, { status: 201 });
   } catch (error) {
     console.error('Send message error:', error);
     return NextResponse.json({ error: 'Failed to send message' }, { status: 500 });

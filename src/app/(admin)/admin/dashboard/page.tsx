@@ -242,12 +242,16 @@ export default async function AdminDashboard() {
                     <td className="px-4 py-3 text-sm font-semibold">{formatCurrency(emp.salary)}</td>
                     <td className="px-4 py-3 text-sm">
                       <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="w-4 h-4" />
-                        </Button>
+                        <Link href={`/admin/employees?id=${emp.id}`}>
+                          <Button variant="ghost" size="sm">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </Link>
+                        <Link href={`/admin/employees?edit=${emp.id}`}>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </Link>
                       </div>
                     </td>
                   </tr>

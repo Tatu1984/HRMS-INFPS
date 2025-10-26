@@ -312,6 +312,19 @@ model Message {
   createdAt   DateTime    @default(now())
 }
 
+model MessagingPermission {
+  id              String    @id @default(cuid())
+  userId          String
+  canMessagePeers Boolean   @default(true)   // Can message same level employees
+  canMessageManager Boolean @default(true)   // Can message their manager
+  canMessageDirector Boolean @default(false) // Can message directors/founder
+  allowedRecipients String? // JSON array of specific user IDs allowed
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([userId])
+}
+
 model SalesTarget {
   id              String    @id @default(cuid())
   employeeId      String    // Sales agent/executive
@@ -494,4 +507,26 @@ enum PayrollStatus {
   PENDING
   APPROVED
   PAID
+}
+
+model HRDocument {
+  id            String    @id @default(cuid())
+  type          HRDocType
+  title         String
+  description   String?
+  content       String?   // For text-based documents (policies, hierarchy)
+  filePath      String?   // For uploaded files
+  year          Int?      // For holiday lists
+  isActive      Boolean   @default(true)
+  createdBy     String?   // Employee ID
+  updatedBy     String?   // Employee ID
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum HRDocType {
+  POLICY
+  HOLIDAY_LIST
+  COMPANY_HIERARCHY
+  OTHER
 }

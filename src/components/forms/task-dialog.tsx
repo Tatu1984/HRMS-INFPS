@@ -169,7 +169,7 @@ export function TaskDialog({
                   <SelectValue placeholder="Select milestone (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Milestone</SelectItem>
+                  <SelectItem value="none">No Milestone</SelectItem>
                   {milestones.map((milestone: any) => (
                     <SelectItem key={milestone.id} value={milestone.id}>
                       {milestone.name}

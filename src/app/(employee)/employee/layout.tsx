@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import Sidebar from '@/components/shared/sidebar';
 import Navbar from '@/components/shared/navbar';
+import { PopupMessenger } from '@/components/messenger/PopupMessenger';
 
 const sidebarItems = [
   { icon: 'LayoutDashboard', label: 'Dashboard', href: '/employee/dashboard' },
@@ -28,6 +29,7 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
           {children}
         </main>
       </div>
+      <PopupMessenger currentUserId={session.id} currentUserName={session.name} />
     </div>
   );
 }
