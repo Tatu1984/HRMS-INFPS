@@ -13,10 +13,12 @@ const sidebarItems = [
   { icon: 'TrendingUp', label: 'Leads', href: '/admin/leads' },
   { icon: 'ShoppingCart', label: 'Sales', href: '/admin/sales' },
   { icon: 'DollarSign', label: 'Payroll', href: '/admin/payroll' },
+  { icon: 'Settings2', label: 'Payroll Settings', href: '/admin/payroll-settings' },
   { icon: 'Receipt', label: 'Invoices', href: '/admin/invoices' },
   { icon: 'Wallet', label: 'Accounts', href: '/admin/accounts' },
   { icon: 'MessageSquare', label: 'Messages', href: '/admin/messages' },
   { icon: 'BarChart3', label: 'Reports', href: '/admin/reports' },
+  { icon: 'Building2', label: 'Company Profile', href: '/admin/company-profile' },
   { icon: 'Settings', label: 'Settings', href: '/admin/settings' },
 ];
 

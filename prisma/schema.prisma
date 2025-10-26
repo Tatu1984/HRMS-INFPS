@@ -205,6 +205,54 @@ model SalaryConfig {
   updatedAt       DateTime  @updatedAt
 }
 
+model CompanyProfile {
+  id              String              @id @default(cuid())
+  companyName     String              @default("Infiniti Tech Partners")
+  address1        String?
+  address2        String?
+  city            String?
+  state           String?
+  pincode         String?
+  country         String              @default("India")
+  phone           String?
+  email           String?
+  website         String?
+  logo            String?             // Path to company logo
+  panNumber       String?
+  gstNumber       String?
+  cinNumber       String?             // Corporate Identification Number
+  bankAccounts    CompanyBankAccount[]
+  updatedAt       DateTime            @updatedAt
+}
+
+model CompanyBankAccount {
+  id              String          @id @default(cuid())
+  companyId       String
+  company         CompanyProfile  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  nickname        String          // e.g., "Main Account", "USD Account", etc.
+  accountType     String          @default("Indian") // "Indian" or "International"
+
+  // Common fields
+  bankName        String
+  accountNumber   String
+  accountHolder   String?
+
+  // Indian bank fields
+  ifscCode        String?
+  branchName      String?
+
+  // International bank fields
+  swiftCode       String?
+  iban            String?
+  routingNumber   String?
+  bankAddress     String?
+
+  currency        String          @default("INR")
+  isDefault       Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
 model Invoice {
   id              String          @id @default(cuid())
   invoiceNumber   String          @unique

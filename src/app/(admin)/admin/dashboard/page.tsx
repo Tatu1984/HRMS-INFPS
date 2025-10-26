@@ -37,43 +37,43 @@ export default async function AdminDashboard() {
   const pendingSales = sales.filter(s => s.status === 'PENDING').length;
 
   const stats = [
-    { 
-      label: 'Total Employees', 
-      value: employees.length.toString(), 
-      change: '+12%', 
-      icon: Users, 
-      color: 'bg-blue-500' 
+    {
+      label: 'Total Employees',
+      value: employees.length.toString(),
+      change: '+12%',
+      icon: Users,
+      color: 'bg-orange-500'
     },
-    { 
-      label: 'Active Projects', 
-      value: activeProjects.toString(), 
-      change: '+5%', 
-      icon: FolderKanban, 
-      color: 'bg-green-500' 
+    {
+      label: 'Active Projects',
+      value: activeProjects.toString(),
+      change: '+5%',
+      icon: FolderKanban,
+      color: 'bg-amber-500'
     },
-    { 
-      label: 'Pending Leaves', 
-      value: pendingLeaves.toString(), 
-      change: '-3%', 
-      icon: Calendar, 
-      color: 'bg-orange-500' 
+    {
+      label: 'Pending Leaves',
+      value: pendingLeaves.toString(),
+      change: '-3%',
+      icon: Calendar,
+      color: 'bg-orange-600'
     },
-    { 
-      label: 'Monthly Payroll', 
-      value: formatCurrency(monthlyPayroll), 
-      change: '+8%', 
-      icon: DollarSign, 
-      color: 'bg-purple-500' 
+    {
+      label: 'Monthly Payroll',
+      value: formatCurrency(monthlyPayroll),
+      change: '+8%',
+      icon: DollarSign,
+      color: 'bg-amber-600'
     }
   ];
 
   const quickActions = [
-    { label: 'Add Employee', icon: UserPlus, color: 'bg-blue-600', href: '/admin/employees' },
-    { label: 'New Project', icon: Plus, color: 'bg-green-600', href: '/admin/projects' },
-    { label: 'Approve Leaves', icon: CheckSquare, color: 'bg-orange-600', href: '/admin/leave-management' },
-    { label: 'Generate Invoice', icon: Receipt, color: 'bg-purple-600', href: '/admin/invoices' },
-    { label: 'Add Lead', icon: Plus, color: 'bg-indigo-600', href: '/admin/leads' },
-    { label: 'New Sale', icon: Plus, color: 'bg-teal-600', href: '/admin/sales' }
+    { label: 'Add Employee', icon: UserPlus, color: 'bg-orange-600 hover:bg-orange-700', href: '/admin/employees' },
+    { label: 'New Project', icon: Plus, color: 'bg-amber-600 hover:bg-amber-700', href: '/admin/projects' },
+    { label: 'Approve Leaves', icon: CheckSquare, color: 'bg-orange-500 hover:bg-orange-600', href: '/admin/leave-management' },
+    { label: 'Generate Invoice', icon: Receipt, color: 'bg-amber-500 hover:bg-amber-600', href: '/admin/invoices' },
+    { label: 'Add Lead', icon: Plus, color: 'bg-orange-700 hover:bg-orange-800', href: '/admin/leads' },
+    { label: 'New Sale', icon: Plus, color: 'bg-amber-700 hover:bg-amber-800', href: '/admin/sales' }
   ];
 
   return (
@@ -139,22 +139,22 @@ export default async function AdminDashboard() {
                   <p className="text-sm text-gray-500">Active Leads</p>
                   <p className="text-2xl font-bold">{activeLeads}</p>
                 </div>
-                <div className="bg-blue-100 p-3 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-blue-600" />
+                <div className="bg-orange-100 p-3 rounded-lg">
+                  <TrendingUp className="w-6 h-6 text-orange-600" />
                 </div>
               </div>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500">Converted</p>
-                  <p className="text-2xl font-bold text-green-600">{convertedLeads}</p>
+                  <p className="text-2xl font-bold text-amber-600">{convertedLeads}</p>
                 </div>
-                <div className="bg-green-100 p-3 rounded-lg">
-                  <CheckSquare className="w-6 h-6 text-green-600" />
+                <div className="bg-amber-100 p-3 rounded-lg">
+                  <CheckSquare className="w-6 h-6 text-amber-600" />
                 </div>
               </div>
               <div className="flex items-center justify-between pt-2 border-t">
                 <span className="text-sm font-medium">Conversion Rate</span>
-                <Badge className="bg-green-100 text-green-700">
+                <Badge className="bg-amber-100 text-amber-700">
                   {leads.length > 0 ? ((convertedLeads / leads.length) * 100).toFixed(1) : '0'}%
                 </Badge>
               </div>
@@ -176,10 +176,10 @@ export default async function AdminDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500">Total Revenue</p>
-                  <p className="text-2xl font-bold text-green-600">{formatCurrency(totalSalesRevenue)}</p>
+                  <p className="text-2xl font-bold text-amber-600">{formatCurrency(totalSalesRevenue)}</p>
                 </div>
-                <div className="bg-green-100 p-3 rounded-lg">
-                  <DollarSign className="w-6 h-6 text-green-600" />
+                <div className="bg-amber-100 p-3 rounded-lg">
+                  <DollarSign className="w-6 h-6 text-amber-600" />
                 </div>
               </div>
               <div className="flex items-center justify-between">
@@ -187,13 +187,13 @@ export default async function AdminDashboard() {
                   <p className="text-sm text-gray-500">Total Sales</p>
                   <p className="text-2xl font-bold">{sales.length}</p>
                 </div>
-                <div className="bg-blue-100 p-3 rounded-lg">
-                  <Receipt className="w-6 h-6 text-blue-600" />
+                <div className="bg-orange-100 p-3 rounded-lg">
+                  <Receipt className="w-6 h-6 text-orange-600" />
                 </div>
               </div>
               <div className="flex items-center justify-between pt-2 border-t">
                 <span className="text-sm font-medium">Pending</span>
-                <Badge className="bg-yellow-100 text-yellow-700">
+                <Badge className="bg-orange-100 text-orange-700">
                   {pendingSales}
                 </Badge>
               </div>
